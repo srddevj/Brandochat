@@ -1,0 +1,12 @@
+---
+description: BrandoChat-style automation monorepo layout and boundaries
+alwaysApply: true
+---
+
+# Automation platform
+
+- **Frontend**: `automation-platform/frontend` — Vite + React + Tailwind. Browser uses Supabase anon key + RLS. Calls Node API via `/api` proxy for Baileys (WhatsApp).
+- **Backend**: `automation-platform/backend` — Express + Baileys + OpenAI + Supabase **service role** for trusted writes. Entry: `src/server.ts`, app factory: `src/app.ts`.
+- **Database**: `supabase/migrations` — Postgres schema + RLS. Apply with Supabase CLI (`supabase db push`).
+
+Do not put service role keys or OpenAI keys in frontend code. Keep WhatsApp session files only on the server under `WA_AUTH_ROOT`.

@@ -1,0 +1,13 @@
+---
+description: Frontend React/Tailwind conventions
+globs: automation-platform/frontend/**/*.{tsx,ts}
+alwaysApply: false
+---
+
+# Frontend conventions
+
+- **Structure**: `app/` (App shell + `routes.tsx`), `config/public-env.ts` (Vite env only), `context/`, `lib/` (Supabase client, API, domain helpers), `shared/ui` + `shared/hooks`, `pages/`, `components/` (layout).
+- **UI**: Prefer small primitives in `shared/ui` (`Button`, `FormField`, `TextInput`, `PageHeader`, `FormError`) for consistent Tailwind styling.
+- **Workspace routes**: Use `useWorkspaceId()` under `/w/:workspaceId/*`; guard when `undefined`.
+- **Forms**: Parse JSON/metadata in `lib/` (e.g. `contact-metadata.ts`), not inline in huge components.
+- **Env**: Never reference `VITE_*` secrets beyond anon key; backend holds service role + OpenAI.

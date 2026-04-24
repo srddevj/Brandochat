@@ -1,0 +1,8 @@
+node_modules/
+Baileys-reference/
+dist/
+.env
+.env.local
+*.log
+data/wa_sessions/
+.DS_Store

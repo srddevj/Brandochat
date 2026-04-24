@@ -1,0 +1,13 @@
+---
+description: Backend Express/Baileys conventions
+globs: automation-platform/backend/**/*.ts
+alwaysApply: false
+---
+
+# Backend conventions
+
+- **Structure**: `config/` (env), `lib/` (Supabase clients), `http/` (helpers), `middleware/`, `routes/`, `types/`, `flow/` (automation + OpenAI), `wa/` (Baileys).
+- **Async routes**: Use `asyncHandler` from `http/async-handler.ts` so errors reach the global error middleware in `app.ts`.
+- **Supabase**: `createUserClient(jwt)` for membership checks; `getServiceRoleClient()` singleton for Baileys pipeline only.
+- **Imports**: Use `.js` extensions in TypeScript import paths (NodeNext ESM).
+- **Naming**: `*.middleware.ts` for Express middleware; `*.routes.ts` for routers; `readWorkspaceId` for route params.

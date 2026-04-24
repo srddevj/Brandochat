@@ -1,0 +1,33 @@
+Supabase CLI — link this repo to your hosted project
+====================================================
+Official references:
+  https://supabase.com/docs/reference/cli/supabase-login
+  https://supabase.com/docs/reference/cli/supabase-link
+  https://supabase.com/docs/guides/local-development
+
+1) Install CLI (pick one)
+   - brew install supabase/tap/supabase
+   - or: npm install supabase --save-dev  then use npx supabase ...
+
+2) Log in (browser or token)
+   supabase login
+   CI / headless: set env SUPABASE_ACCESS_TOKEN instead (see docs).
+
+3) From repo root (folder that contains supabase/migrations):
+   supabase link --project-ref YOUR_PROJECT_REF
+   Project ref is the id in:
+   https://supabase.com/dashboard/project/YOUR_PROJECT_REF
+   You may be prompted for the database password (or set SUPABASE_DB_PASSWORD).
+
+4) Push migrations to the remote database
+   supabase db push
+
+5) Optional — full local stack (Docker required)
+   supabase init    # already done if supabase/ exists
+   supabase start   # local Postgres + Studio at http://localhost:54323
+
+6) Generate TypeScript types from your schema (optional)
+   supabase gen types typescript --linked > automation-platform/frontend/src/lib/database.types.ts
+
+Backend dev entrypoint: automation-platform/backend/src/server.ts
+(`npm run dev` in that folder.)
