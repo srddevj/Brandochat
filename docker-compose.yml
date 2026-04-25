@@ -3,7 +3,6 @@ services:
     build:
       context: ./automation-platform/backend
       dockerfile: Dockerfile
-    container_name: BrandoChat-backend
     env_file:
       - ./.env
     environment:
@@ -12,7 +11,7 @@ services:
     volumes:
       - wa_sessions:/app/data/wa_sessions
     ports:
-      - "3847:3847"
+      - "${BACKEND_PORT:-3847}:3847"
     restart: unless-stopped
 
   frontend:
@@ -22,11 +21,10 @@ services:
       args:
         VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
         VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
-    container_name: BrandoChat-frontend
     depends_on:
       - backend
     ports:
-      - "5173:80"
+      - "${FRONTEND_PORT:-5173}:80"
     restart: unless-stopped
 
 volumes:
