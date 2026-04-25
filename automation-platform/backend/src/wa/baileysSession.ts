@@ -337,6 +337,30 @@ export async function sendWorkspaceTextMessage(args: {
   return { waMessageId: sent?.key.id ?? null }
 }
 
+export async function ensureWorkspaceWhatsAppConnected(workspaceId: string): Promise<boolean> {
+  const alreadyConnected = Array.from(sessions.values()).some((entry) => entry.workspaceId === workspaceId && entry.pairing_status === 'connected' && Boolean(entry.sock))
+  if (alreadyConnected) return true
+
+  const admin = getServiceRoleClient()
+  const { data: candidates } = await admin
+    .from('whatsapp_instances')
+    .select('id')
+    .eq('workspace_id', workspaceId)
+    .in('pairing_status', ['connected', 'disconnected', 'qr'])
+    .order('last_connected_at', { ascending: false })
+    .limit(5)
+
+  for (const row of candidates ?? []) {
+    const instanceId = row.id as string | undefined
+    if (!instanceId) continue
+    await ensureWorkspaceSocket(workspaceId, instanceId)
+    const session = await waitForConnected(instanceId, SEND_CONNECT_TIMEOUT_MS)
+    if (session?.sock && session.pairing_status === 'connected') return true
+  }
+
+  return false
+}
+
 export async function requestWorkspaceHistorySync(workspaceId: string, instanceId: string): Promise<void> {
   await ensureWorkspaceSocket(workspaceId, instanceId)
   const session = await waitForConnected(instanceId, SYNC_CONNECT_TIMEOUT_MS)

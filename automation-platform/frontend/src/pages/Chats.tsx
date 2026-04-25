@@ -149,6 +149,7 @@ export default function ChatsPage() {
   const [conversation, setConversation] = useState<ConversationRow | null>(null)
   const [labels, setLabels] = useState<WorkspaceLabel[]>([])
   const [conversationLabels, setConversationLabels] = useState<ConversationLabel[]>([])
+  const [mobileConversationOpen, setMobileConversationOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
   function scrollToBottom(behavior: ScrollBehavior = 'smooth') {
@@ -332,6 +333,7 @@ export default function ChatsPage() {
     setChatSearch('')
     setSyncNotice(null)
     scrollToBottom('auto')
+    setMobileConversationOpen(Boolean(selectedContactId))
   }, [selectedContactId])
 
   /** Opening a chat clears unread (WhatsApp count + manual "mark as unread"). */
@@ -558,7 +560,7 @@ export default function ChatsPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] min-h-[680px] flex-col space-y-4">
+    <div className="flex h-[calc(100vh-3rem)] min-h-[680px] flex-col space-y-4 pb-16 lg:pb-0">
       <PageHeader
         title={view === 'unread' ? 'Unread conversations' : view === 'assigned' ? 'Assigned to me' : 'All conversations'}
         description="Pick a contact, review logged inbound/outbound messages, and send WhatsApp text messages through the connected session."
@@ -566,7 +568,7 @@ export default function ChatsPage() {
       <FormError message={error} />
 
       <div className="grid min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/40 lg:grid-cols-[280px_1fr]">
-        <aside className="flex min-h-0 flex-col border-b border-slate-800 lg:border-b-0 lg:border-r">
+        <aside className={`flex min-h-0 flex-col border-b border-slate-800 lg:border-b-0 lg:border-r ${mobileConversationOpen ? 'hidden lg:flex' : 'flex'}`}>
           <div className="shrink-0 border-b border-slate-800 px-4 py-3">
             <h2 className="text-sm font-medium text-white">Conversations</h2>
             <p className="text-xs text-slate-500">{visibleContacts.length} visible chats</p>
@@ -590,7 +592,10 @@ export default function ChatsPage() {
                 <button
                   key={contact.id}
                   type="button"
-                  onClick={() => setSelectedContactId(contact.id)}
+                  onClick={() => {
+                    setSelectedContactId(contact.id)
+                    setMobileConversationOpen(true)
+                  }}
                   className={`block w-full border-b border-slate-800 px-4 py-3 text-left transition ${
                     selectedContactId === contact.id
                       ? 'bg-emerald-500/10 text-white'
@@ -635,11 +640,20 @@ export default function ChatsPage() {
           </div>
         </aside>
 
-        <section className="flex min-h-0 min-w-0 flex-col">
+        <section className={`flex min-h-0 min-w-0 flex-col ${mobileConversationOpen ? 'flex' : 'hidden lg:flex'}`}>
           <header className="shrink-0 border-b border-slate-800 px-4 py-3">
             {selectedContact ? (
               <>
-                <h2 className="font-medium text-white">{contactLabel(selectedContact)}</h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300 lg:hidden"
+                    onClick={() => setMobileConversationOpen(false)}
+                  >
+                    Back
+                  </button>
+                  <h2 className="font-medium text-white">{contactLabel(selectedContact)}</h2>
+                </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <ContactIdWithHoverJid contact={selectedContact} className="min-w-[240px]" />
                   {isGroup(selectedContact) ? (

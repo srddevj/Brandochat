@@ -33,6 +33,13 @@ export function AppShell() {
   const location = useLocation()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const isBuilder = location.pathname.includes('/automations/') && location.pathname.endsWith('/builder')
+  const mobileTabs = [
+    { to: `${base}/chats`, label: 'Chats', icon: '💬' },
+    { to: `${base}/contacts`, label: 'Contacts', icon: '👥' },
+    { to: `${base}/templates`, label: 'Templates', icon: '🧩' },
+    { to: `${base}/automations`, label: 'Flows', icon: '⚡' },
+    { to: `${base}/whatsapp`, label: 'WhatsApp', icon: '🟢' },
+  ]
 
   useEffect(() => {
     void supabase
@@ -327,6 +334,24 @@ export function WorkspaceShell() {
       <div className="min-w-0">
         <Outlet />
       </div>
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 px-2 py-1 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 lg:hidden">
+        <div className="grid grid-cols-5 gap-1">
+          {mobileTabs.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `flex flex-col items-center justify-center rounded-lg px-1 py-1 text-[11px] ${
+                  isActive ? 'bg-emerald-500/15 text-emerald-500 dark:text-emerald-300' : 'text-slate-500 dark:text-slate-400'
+                }`
+              }
+            >
+              <span className="text-sm">{item.icon}</span>
+              <span className="truncate">{item.label}</span>
+            </NavLink>
+          ))}
+        </div>
+      </nav>
     </div>
   )
 }
