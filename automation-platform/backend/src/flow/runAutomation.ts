@@ -23,6 +23,7 @@ type TraceEntry = {
 
 const SEND_RETRY_ATTEMPTS = 3
 const SEND_RETRY_DELAY_MS = 10_000
+const SEND_ATTEMPT_TIMEOUT_MS = 35_000
 
 function toTemplateVars(vars: Record<string, unknown>): Record<string, string> {
   return Object.fromEntries(Object.entries(vars).map(([key, value]) => [key, value == null ? '' : String(value)]))
@@ -79,6 +80,20 @@ async function runAiSkill(instructions: string, variables: Record<string, string
 
 async function sleep(ms: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  let timeout: NodeJS.Timeout | null = null
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeout = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs)
+      }),
+    ])
+  } finally {
+    if (timeout) clearTimeout(timeout)
+  }
 }
 
 async function loadContactVars(admin: SupabaseClient, contactId?: string | null): Promise<Record<string, string>> {
@@ -265,26 +280,37 @@ async function executeStateMachine(
 
       let waMessageId: string | null = null
       if (args.sock) {
-        const sent = await args.sock.sendMessage(recipientJid, { text: body })
+        const sent = await withTimeout(args.sock.sendMessage(recipientJid, { text: body }), SEND_ATTEMPT_TIMEOUT_MS, 'WhatsApp send')
         waMessageId = sent?.key.id ?? null
       } else {
         let sentError: unknown = null
         for (let attempt = 1; attempt <= SEND_RETRY_ATTEMPTS; attempt += 1) {
           try {
-            await ensureWorkspaceWhatsAppConnected(args.workspaceId).catch(() => false)
-            const sent = await sendWorkspaceTextMessage({
-              workspaceId: args.workspaceId,
-              jid: recipientJid,
-              text: body,
-            })
+            await withTimeout(
+              ensureWorkspaceWhatsAppConnected(args.workspaceId).catch(() => false),
+              SEND_ATTEMPT_TIMEOUT_MS,
+              'WhatsApp reconnect',
+            )
+            const sent = await withTimeout(
+              sendWorkspaceTextMessage({
+                workspaceId: args.workspaceId,
+                jid: recipientJid,
+                text: body,
+              }),
+              SEND_ATTEMPT_TIMEOUT_MS,
+              'WhatsApp send',
+            )
             waMessageId = sent.waMessageId
             sentError = null
             break
           } catch (error) {
             sentError = error
             const message = error instanceof Error ? error.message : String(error)
-            const isNotConnected = message.includes('WhatsApp is not connected')
-            if (!isNotConnected || attempt === SEND_RETRY_ATTEMPTS) break
+            const isRetryable =
+              message.includes('WhatsApp is not connected') ||
+              message.includes('timed out') ||
+              message.includes('timed out waiting for message')
+            if (!isRetryable || attempt === SEND_RETRY_ATTEMPTS) break
             await sleep(SEND_RETRY_DELAY_MS)
           }
         }
