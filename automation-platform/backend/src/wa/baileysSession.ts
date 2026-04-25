@@ -282,6 +282,7 @@ export async function sendWorkspaceTextMessage(args: {
   jid: string
   text: string
 }): Promise<{ waMessageId: string | null }> {
+  const admin = getServiceRoleClient()
   let session: SessionEntry | null | undefined = args.instanceId
     ? sessions.get(args.instanceId)
     : Array.from(sessions.values()).find((entry) => entry.workspaceId === args.workspaceId && entry.pairing_status === 'connected')
@@ -289,6 +290,23 @@ export async function sendWorkspaceTextMessage(args: {
   if (args.instanceId && (!session?.sock || session.pairing_status !== 'connected')) {
     await ensureWorkspaceSocket(args.workspaceId, args.instanceId)
     session = await waitForConnected(args.instanceId, SEND_CONNECT_TIMEOUT_MS)
+  }
+
+  if (!session?.sock && !args.instanceId) {
+    const { data: preferredInstance } = await admin
+      .from('whatsapp_instances')
+      .select('id')
+      .eq('workspace_id', args.workspaceId)
+      .eq('pairing_status', 'connected')
+      .order('last_connected_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const fallbackInstanceId = preferredInstance?.id as string | undefined
+    if (fallbackInstanceId) {
+      await ensureWorkspaceSocket(args.workspaceId, fallbackInstanceId)
+      session = await waitForConnected(fallbackInstanceId, SEND_CONNECT_TIMEOUT_MS)
+    }
   }
 
   if (!session?.sock) {
