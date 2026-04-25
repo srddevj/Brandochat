@@ -1,12 +1,82 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { WASocket } from '@whiskeysockets/baileys'
-import { applyTemplateVars, buildContactPlaceholderVars, type AutomationGraph } from './graphRuntime.js'
+import OpenAI from 'openai'
+import { env } from '../config/env.js'
+import { applyTemplateVars, buildContactPlaceholderVars, readVariable, type AutomationGraph } from './graphRuntime.js'
+import type { AutomationRunRow } from './types.js'
 
 export type FlowStateRow = {
   id: string
   current_node_id: string
   status: string
   variables: Record<string, unknown>
+}
+
+type TraceEntry = {
+  at: string
+  nodeId: string
+  nodeType: string
+  event: string
+  detail?: Record<string, unknown>
+}
+
+function toTemplateVars(vars: Record<string, unknown>): Record<string, string> {
+  return Object.fromEntries(Object.entries(vars).map(([key, value]) => [key, value == null ? '' : String(value)]))
+}
+
+function appendTrace(
+  variables: Record<string, unknown>,
+  entry: Omit<TraceEntry, 'at'>,
+): Record<string, unknown> {
+  const currentTrace = Array.isArray(variables.executionTrace) ? (variables.executionTrace as TraceEntry[]) : []
+  return {
+    ...variables,
+    executionTrace: [
+      ...currentTrace,
+      {
+        at: new Date().toISOString(),
+        ...entry,
+      },
+    ].slice(-200),
+  }
+}
+
+async function runAiSkill(instructions: string, variables: Record<string, string>): Promise<string> {
+  const prompt = applyTemplateVars(instructions, variables)
+  if (!env.OPENAI_API_KEY) return prompt
+  const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY })
+  const response = await openai.chat.completions.create({
+    model: env.OPENAI_MODEL,
+    temperature: 0.3,
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You are an automation skill inside a WhatsApp workflow. Follow the provided business instructions exactly. Return only the next message or concise decision text.',
+      },
+      { role: 'user', content: JSON.stringify({ instructions: prompt, variables }) },
+    ],
+  })
+  return response.choices[0]?.message?.content?.trim() || ''
+}
+
+async function loadContactVars(admin: SupabaseClient, contactId?: string | null): Promise<Record<string, string>> {
+  if (!contactId) return {}
+  const { data: contactRow } = await admin
+    .from('contacts')
+    .select('display_name, phone_e164, wa_jid, notes, metadata')
+    .eq('id', contactId)
+    .maybeSingle()
+
+  return contactRow
+    ? buildContactPlaceholderVars({
+        display_name: contactRow.display_name as string | null,
+        phone_e164: contactRow.phone_e164 as string | null,
+        wa_jid: contactRow.wa_jid as string,
+        notes: contactRow.notes as string | null,
+        metadata: contactRow.metadata as Record<string, unknown> | null,
+      })
+    : {}
 }
 
 export async function executeGraphUntilBlocked(
@@ -21,66 +91,130 @@ export async function executeGraphUntilBlocked(
     sock: WASocket
   },
 ): Promise<void> {
-  let current = args.state.current_node_id
-  let variables = { ...(args.state.variables as Record<string, string>) }
+  await executeStateMachine(admin, {
+    ...args,
+    stateId: args.state.id,
+    table: 'contact_flow_state',
+    currentNodeId: args.state.current_node_id,
+    status: args.state.status,
+    variables: args.state.variables,
+  })
+}
 
-  const patchState = async (patch: Partial<FlowStateRow>) => {
-    await admin
-      .from('contact_flow_state')
-      .update({
-        current_node_id: patch.current_node_id ?? current,
-        status: patch.status ?? 'running',
-        variables: (patch.variables ?? variables) as Record<string, unknown>,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', args.state.id)
+export async function executeAutomationRun(
+  admin: SupabaseClient,
+  args: {
+    workspaceId: string
+    contactId?: string | null
+    contactJid?: string | null
+    conversationId?: string | null
+    automationId: string
+    graph: AutomationGraph
+    run: AutomationRunRow
+    sock?: WASocket | null
+  },
+): Promise<void> {
+  await executeStateMachine(admin, {
+    ...args,
+    stateId: args.run.id,
+    table: 'automation_runs',
+    currentNodeId: args.run.current_node_id,
+    status: args.run.status,
+    variables: args.run.variables,
+  })
+}
+
+async function executeStateMachine(
+  admin: SupabaseClient,
+  args: {
+    workspaceId: string
+    contactId?: string | null
+    contactJid?: string | null
+    conversationId?: string | null
+    automationId: string
+    graph: AutomationGraph
+    stateId: string
+    table: 'contact_flow_state' | 'automation_runs'
+    currentNodeId: string
+    status: string
+    variables: Record<string, unknown>
+    sock?: WASocket | null
+  },
+): Promise<void> {
+  let current = args.currentNodeId
+  let variables = { ...args.variables }
+
+  const patchState = async (patch: Partial<FlowStateRow> & { error?: string | null }) => {
+    const status = patch.status ?? 'running'
+    const update: Record<string, unknown> = {
+      current_node_id: patch.current_node_id ?? current,
+      status,
+      variables: (patch.variables ?? variables) as Record<string, unknown>,
+      updated_at: new Date().toISOString(),
+    }
+    if (args.table === 'automation_runs') {
+      if (status === 'completed' || status === 'failed') update.completed_at = new Date().toISOString()
+      if (patch.error !== undefined) update.error = patch.error
+    }
+    await admin.from(args.table).update(update).eq('id', args.stateId)
   }
 
   while (true) {
     const node = args.graph.nodes[current]
     if (!node) {
+      variables = appendTrace(variables, {
+        nodeId: current,
+        nodeType: 'missing',
+        event: 'completed',
+        detail: { reason: 'Node was not found, ending run.' },
+      })
       await patchState({ status: 'completed', current_node_id: current })
       return
     }
     if (node.type === 'end') {
+      variables = appendTrace(variables, { nodeId: current, nodeType: node.type, event: 'completed' })
       await patchState({ status: 'completed', current_node_id: current })
       return
     }
     if (node.type === 'branch') {
+      variables = appendTrace(variables, {
+        nodeId: current,
+        nodeType: node.type,
+        event: 'awaiting_reply',
+        detail: { options: node.options.map((option) => ({ id: option.id, label: option.label, next: option.next })) },
+      })
       await patchState({ status: 'awaiting_reply', current_node_id: current, variables })
       return
     }
     if (node.type === 'send') {
+      if (!args.contactId || !args.contactJid || !args.sock) {
+        await patchState({ status: 'failed', current_node_id: current, error: 'Send node requires a connected WhatsApp contact' })
+        return
+      }
       const { data: tpl } = await admin
         .from('message_templates')
         .select('body')
         .eq('id', node.templateId)
         .maybeSingle()
-      const { data: contactRow } = await admin
-        .from('contacts')
-        .select('display_name, phone_e164, wa_jid, notes, metadata')
-        .eq('id', args.contactId)
-        .maybeSingle()
-      const contactVars = contactRow
-        ? buildContactPlaceholderVars({
-            display_name: contactRow.display_name as string | null,
-            phone_e164: contactRow.phone_e164 as string | null,
-            wa_jid: contactRow.wa_jid as string,
-            notes: contactRow.notes as string | null,
-            metadata: contactRow.metadata as Record<string, unknown> | null,
-          })
-        : {}
+      const contactVars = await loadContactVars(admin, args.contactId)
       const mergedVars = { ...contactVars, ...variables }
-      const body = applyTemplateVars((tpl?.body as string) ?? '[missing template]', mergedVars)
+      const body = applyTemplateVars((tpl?.body as string) ?? '[missing template]', toTemplateVars(mergedVars))
       await args.sock.sendMessage(args.contactJid, { text: body })
       await admin.from('message_events').insert({
         workspace_id: args.workspaceId,
         contact_id: args.contactId,
+        conversation_id: args.conversationId ?? null,
         direction: 'outbound',
         wa_chat_jid: args.contactJid,
         body,
         automation_id: args.automationId,
         node_id: current,
+      })
+      variables = appendTrace(variables, {
+        nodeId: current,
+        nodeType: node.type,
+        event: 'message_sent',
+        detail: { templateId: node.templateId, next: node.next ?? null, bodyPreview: body.slice(0, 300) },
       })
       const next = node.next
       if (!next) {
@@ -93,6 +227,148 @@ export async function executeGraphUntilBlocked(
         return
       }
       current = next
+      await patchState({ status: 'running', current_node_id: current, variables })
+      continue
+    }
+    if (node.type === 'condition') {
+      const contactVars = await loadContactVars(admin, args.contactId)
+      const value = readVariable(node.variable, toTemplateVars({ ...contactVars, ...variables }))
+      const matches =
+        node.operator === 'exists'
+          ? Boolean(value)
+          : node.operator === 'contains'
+            ? value.toLowerCase().includes(String(node.value ?? '').toLowerCase())
+            : value === String(node.value ?? '')
+      const next = matches ? node.trueNext : node.falseNext
+      variables = appendTrace(variables, {
+        nodeId: current,
+        nodeType: node.type,
+        event: 'condition_evaluated',
+        detail: {
+          variable: node.variable,
+          operator: node.operator,
+          expected: node.value ?? null,
+          actual: value,
+          passed: matches,
+          next: next ?? null,
+        },
+      })
+      if (!next) {
+        await patchState({ status: 'completed', current_node_id: current, variables })
+        return
+      }
+      current = next
+      await patchState({ status: 'running', current_node_id: current, variables })
+      continue
+    }
+    if (node.type === 'updateContact') {
+      if (!args.contactId) {
+        await patchState({ status: 'failed', current_node_id: current, error: 'Update contact node requires a contact' })
+        return
+      }
+      const { data: contact } = await admin.from('contacts').select('metadata').eq('id', args.contactId).maybeSingle()
+      const metadata =
+        contact?.metadata && typeof contact.metadata === 'object' && !Array.isArray(contact.metadata)
+          ? (contact.metadata as Record<string, unknown>)
+          : {}
+      await admin
+        .from('contacts')
+        .update({ metadata: { ...metadata, [node.path]: applyTemplateVars(node.value, toTemplateVars(variables)) } })
+        .eq('id', args.contactId)
+      variables = appendTrace(variables, {
+        nodeId: current,
+        nodeType: node.type,
+        event: 'contact_updated',
+        detail: { path: node.path, next: node.next ?? null },
+      })
+      if (!node.next) {
+        await patchState({ status: 'completed', current_node_id: current, variables })
+        return
+      }
+      current = node.next
+      await patchState({ status: 'running', current_node_id: current, variables })
+      continue
+    }
+    if (node.type === 'assignConversation') {
+      if (args.conversationId) {
+        await admin
+          .from('conversations')
+          .update({ assignee: applyTemplateVars(node.assignee, toTemplateVars(variables)) })
+          .eq('id', args.conversationId)
+      }
+      variables = appendTrace(variables, {
+        nodeId: current,
+        nodeType: node.type,
+        event: 'conversation_assigned',
+        detail: { assignee: applyTemplateVars(node.assignee, toTemplateVars(variables)), next: node.next ?? null },
+      })
+      if (!node.next) {
+        await patchState({ status: 'completed', current_node_id: current, variables })
+        return
+      }
+      current = node.next
+      await patchState({ status: 'running', current_node_id: current, variables })
+      continue
+    }
+    if (node.type === 'delayUntil') {
+      variables[`delay.${current}.until`] = applyTemplateVars(node.until, toTemplateVars(variables))
+      variables = appendTrace(variables, {
+        nodeId: current,
+        nodeType: node.type,
+        event: 'paused_until',
+        detail: { until: variables[`delay.${current}.until`], next: node.next ?? null },
+      })
+      await patchState({ status: 'paused', current_node_id: current, variables })
+      return
+    }
+    if (node.type === 'webhookResponse') {
+      variables.webhookResponse = applyTemplateVars(node.body ?? '', toTemplateVars(variables))
+      variables = appendTrace(variables, {
+        nodeId: current,
+        nodeType: node.type,
+        event: 'webhook_response_prepared',
+        detail: { bodyPreview: String(variables.webhookResponse).slice(0, 300), next: node.next ?? null },
+      })
+      if (!node.next) {
+        await patchState({ status: 'completed', current_node_id: current, variables })
+        return
+      }
+      current = node.next
+      await patchState({ status: 'running', current_node_id: current, variables })
+      continue
+    }
+    if (node.type === 'aiSkill') {
+      const output = await runAiSkill(node.instructions, toTemplateVars(variables))
+      const key = node.outputVariable || `skill.${current}.output`
+      variables[key] = output
+      if (node.sendAsMessage) {
+        if (!args.contactId || !args.contactJid || !args.sock) {
+          await patchState({ status: 'failed', current_node_id: current, error: 'AI skill send requires a connected WhatsApp contact' })
+          return
+        }
+        await args.sock.sendMessage(args.contactJid, { text: output })
+        await admin.from('message_events').insert({
+          workspace_id: args.workspaceId,
+          contact_id: args.contactId,
+          conversation_id: args.conversationId ?? null,
+          direction: 'outbound',
+          wa_chat_jid: args.contactJid,
+          body: output,
+          automation_id: args.automationId,
+          node_id: current,
+        })
+      }
+      variables = appendTrace(variables, {
+        nodeId: current,
+        nodeType: node.type,
+        event: 'ai_skill_completed',
+        detail: { outputVariable: key, sentAsMessage: Boolean(node.sendAsMessage), outputPreview: output.slice(0, 300), next: node.next ?? null },
+      })
+      if (!node.next) {
+        await patchState({ status: 'completed', current_node_id: current, variables })
+        return
+      }
+      current = node.next
       await patchState({ status: 'running', current_node_id: current, variables })
       continue
     }

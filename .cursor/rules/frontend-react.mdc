@@ -11,3 +11,6 @@ alwaysApply: false
 - **Workspace routes**: Use `useWorkspaceId()` under `/w/:workspaceId/*`; guard when `undefined`.
 - **Forms**: Parse JSON/metadata in `lib/` (e.g. `contact-metadata.ts`), not inline in huge components.
 - **Env**: Never reference `VITE_*` secrets beyond anon key; backend holds service role + OpenAI.
+- **Integrations UX**: Render provider-specific auth forms (API key/OAuth/service account) with minimal required fields and clear placeholders. Default to safe values per provider.
+- **Secrets handling**: Never show full secret/token values after save. Use masked previews and avoid persisting raw secrets in component state longer than needed.
+- **Logs surface**: Show recent integration logs in chronological order with level badge (`info/warn/error`) and timestamp for support/debugging.

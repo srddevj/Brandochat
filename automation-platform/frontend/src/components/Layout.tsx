@@ -1,33 +1,105 @@
-import { Link, NavLink, Outlet, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, NavLink, Outlet, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 
 const navCls = ({ isActive }: { isActive: boolean }) =>
-  `rounded-lg px-3 py-2 text-sm font-medium transition ${
+  `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
     isActive ? 'bg-emerald-500/15 text-emerald-300' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
   }`
 
+type Workspace = {
+  id: string
+  name: string
+}
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('')
+}
+
 export function AppShell() {
-  const { signOut, user } = useAuth()
+  const { user } = useAuth()
+  const { workspaceId } = useParams()
+  const location = useLocation()
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+  const isBuilder = location.pathname.includes('/automations/') && location.pathname.endsWith('/builder')
+
+  useEffect(() => {
+    void supabase
+      .from('workspaces')
+      .select('id, name')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setWorkspaces((data as Workspace[]) ?? []))
+  }, [])
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-          <Link to="/workspaces" className="text-lg font-semibold tracking-tight text-white">
-            BrandoChat <span className="text-emerald-400">Automation</span>
+    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+      <aside className={`hidden w-[76px] shrink-0 border-r border-slate-800 bg-slate-950 p-3 lg:flex-col ${isBuilder ? 'lg:hidden' : 'lg:flex'}`}>
+        <Link
+          to="/workspaces"
+          title="All workspaces"
+          className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-sky-500 text-lg font-bold text-white shadow-lg shadow-emerald-950/40"
+        >
+          B<span className="text-emerald-400">c</span>
+        </Link>
+
+        <nav className="flex flex-1 flex-col items-center gap-3 overflow-y-auto">
+          {workspaces.map((workspace) => {
+            const active = workspace.id === workspaceId
+            return (
+              <Link
+                key={workspace.id}
+                to={`/w/${workspace.id}/chats`}
+                title={workspace.name}
+                className={`group relative flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-semibold transition ${
+                  active
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-slate-800 text-slate-300 hover:rounded-xl hover:bg-slate-700 hover:text-white'
+                }`}
+              >
+                {active ? <span className="absolute -left-3 h-8 w-1 rounded-r bg-emerald-300" /> : null}
+                {initials(workspace.name) || 'WS'}
+              </Link>
+            )
+          })}
+          <Link
+            to="/workspaces"
+            title="Create or choose workspace"
+            className="flex h-12 w-12 items-center justify-center rounded-2xl border border-dashed border-slate-700 text-xl text-slate-400 hover:border-emerald-500/60 hover:text-emerald-300"
+          >
+            +
           </Link>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-slate-500 sm:inline">{user?.email}</span>
-            <button
-              type="button"
-              onClick={() => void signOut()}
-              className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
-            >
-              Sign out
-            </button>
-          </div>
+        </nav>
+
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <button
+            title="Notifications"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-lg text-slate-400 hover:bg-slate-800 hover:text-white"
+          >
+            🔔
+          </button>
+          <Link
+            title="Settings"
+            to="/account/settings"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-lg text-slate-400 hover:bg-slate-800 hover:text-white"
+          >
+            ⚙️
+          </Link>
+          <Link
+            title={user?.email}
+            to="/account/settings"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-slate-300 hover:text-white"
+          >
+            {user?.email?.slice(0, 2).toUpperCase() ?? 'ME'}
+          </Link>
         </div>
-      </header>
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8">
+      </aside>
+      <main className={`flex min-w-0 flex-1 flex-col ${isBuilder ? 'p-0' : 'px-4 py-6 lg:px-6'}`}>
         <Outlet />
       </main>
     </div>
@@ -36,32 +108,122 @@ export function AppShell() {
 
 export function WorkspaceShell() {
   const { workspaceId } = useParams()
+  const location = useLocation()
   const base = `/w/${workspaceId}`
+  const [stats, setStats] = useState({ connected: 0, unread: 0, assigned: 0 })
+  const [workspaceName, setWorkspaceName] = useState('Current workspace')
+
+  const loadStats = useCallback(async () => {
+    if (!workspaceId) return
+    const [{ data: instances }, { data: contacts }] = await Promise.all([
+      supabase.from('whatsapp_instances').select('pairing_status').eq('workspace_id', workspaceId),
+      supabase.from('contacts').select('metadata').eq('workspace_id', workspaceId),
+    ])
+
+    const connected = (instances ?? []).filter((instance) => instance.pairing_status === 'connected').length
+    const unread = (contacts ?? []).reduce((total, row) => {
+      const value = (row.metadata as Record<string, unknown> | null)?.wa_unread_count
+      return total + (typeof value === 'number' ? value : 0)
+    }, 0)
+    const assigned = (contacts ?? []).filter((row) => {
+      const value = (row.metadata as Record<string, unknown> | null)?.assigned_to
+      return typeof value === 'string' && value.length > 0
+    }).length
+    setStats({ connected, unread, assigned })
+  }, [workspaceId])
+
+  useEffect(() => {
+    void loadStats()
+    const t = setInterval(() => void loadStats(), 5000)
+    return () => clearInterval(t)
+  }, [loadStats])
+
+  useEffect(() => {
+    if (!workspaceId) return
+    void supabase
+      .from('workspaces')
+      .select('name')
+      .eq('id', workspaceId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.name) setWorkspaceName(data.name as string)
+      })
+  }, [workspaceId])
+
+  const productItems = useMemo(
+    () => [
+      { to: `${base}/contacts`, label: 'Contacts', symbol: '👥' },
+      { to: `${base}/templates`, label: 'Templates', symbol: '🧩' },
+      { to: `${base}/automations`, label: 'Automations', symbol: '⚡' },
+      { to: `${base}/whatsapp`, label: 'WhatsApp numbers', symbol: '🟢', badge: stats.connected },
+      { to: `${base}/integrations`, label: 'Integrations', symbol: '🔌' },
+    ],
+    [base, stats.connected],
+  )
+  const isBuilder = location.pathname.includes('/automations/') && location.pathname.endsWith('/builder')
+
+  if (isBuilder) {
+    return <Outlet />
+  }
+
   return (
-    <div className="flex flex-1 flex-col gap-6 lg:flex-row">
-      <aside className="w-full shrink-0 lg:w-52">
-        <nav className="flex flex-wrap gap-1 lg:flex-col">
-          <NavLink to={base} end className={navCls}>
-            Overview
-          </NavLink>
-          <NavLink to={`${base}/contacts`} className={navCls}>
-            Contacts
-          </NavLink>
-          <NavLink to={`${base}/templates`} className={navCls}>
-            Templates
-          </NavLink>
-          <NavLink to={`${base}/automations`} className={navCls}>
-            Automations
-          </NavLink>
-          <NavLink to={`${base}/whatsapp`} className={navCls}>
-            WhatsApp
-          </NavLink>
-          <NavLink to={`${base}/logs`} className={navCls}>
-            Message log
-          </NavLink>
+    <div className="grid min-h-[calc(100vh-3rem)] grid-cols-1 gap-4 lg:grid-cols-[240px_1fr]">
+      <aside className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3 shadow-xl shadow-slate-950/20">
+        <div className="mb-4 rounded-xl bg-slate-950/60 p-3">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Workspace</p>
+          <p className="mt-1 truncate text-sm font-semibold text-white">{workspaceName}</p>
+        </div>
+
+        <div className="mb-3 rounded-xl border border-slate-800 bg-slate-950/40 p-2">
+          <div className="mb-1 flex items-center gap-2 px-2 py-1 text-xs uppercase tracking-wide text-slate-500">
+            <span>💬</span>
+            Inbox
+          </div>
+          <nav className="space-y-1">
+            <NavLink to={`${base}/chats`} end className={navCls}>
+              <span className="ml-9">All conversations</span>
+            </NavLink>
+            <NavLink to={`${base}/chats?view=assigned`} className={navCls}>
+              <span className="ml-9">Assigned to me</span>
+              <span className="ml-auto rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-400">{stats.assigned}</span>
+            </NavLink>
+            <NavLink to={`${base}/chats?view=unread`} className={navCls}>
+              <span className="ml-9">Unread</span>
+              <span className="ml-auto rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-400">{stats.unread}</span>
+            </NavLink>
+          </nav>
+        </div>
+
+        <nav className="space-y-1 border-t border-slate-800 pt-2">
+          {productItems.map((item) => (
+            <NavLink key={item.to} to={item.to} className={navCls}>
+              <span className="mr-1 inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-800 text-base text-slate-300">
+                {item.symbol}
+              </span>
+              <span>{item.label}</span>
+              {typeof item.badge === 'number' ? (
+                <span className="ml-auto rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-300">{item.badge}</span>
+              ) : null}
+            </NavLink>
+          ))}
         </nav>
+
+        <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/40 p-2">
+          <div className="mb-1 flex items-center gap-2 px-2 py-1 text-xs uppercase tracking-wide text-slate-500">
+            <span>⚙️</span>
+            Settings
+          </div>
+          <nav className="space-y-1">
+            <NavLink to={`${base}/settings`} end className={navCls}>
+              <span className="ml-9">Workspace settings</span>
+            </NavLink>
+            <NavLink to={`${base}/logs`} className={navCls}>
+              <span className="ml-9">Message log</span>
+            </NavLink>
+          </nav>
+        </div>
       </aside>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0">
         <Outlet />
       </div>
     </div>

@@ -5,6 +5,7 @@ export default function WorkspaceHome() {
   const base = `/w/${workspaceId}`
   const cards = [
     { to: `${base}/contacts`, title: 'Contacts', desc: 'WhatsApp contacts and notes' },
+    { to: `${base}/chats`, title: 'Chats', desc: 'View conversations and send WhatsApp messages' },
     { to: `${base}/templates`, title: 'Templates', desc: 'Reusable message bodies' },
     { to: `${base}/automations`, title: 'Automations', desc: 'Flows with GPT-powered branches' },
     { to: `${base}/whatsapp`, title: 'WhatsApp', desc: 'Pair this workspace with QR' },

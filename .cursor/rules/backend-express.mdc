@@ -11,3 +11,7 @@ alwaysApply: false
 - **Supabase**: `createUserClient(jwt)` for membership checks; `getServiceRoleClient()` singleton for Baileys pipeline only.
 - **Imports**: Use `.js` extensions in TypeScript import paths (NodeNext ESM).
 - **Naming**: `*.middleware.ts` for Express middleware; `*.routes.ts` for routers; `readWorkspaceId` for route params.
+- **Integrations architecture**: Keep integration config generic by provider + auth type + JSON settings so new providers do not require schema rewrites.
+- **Secrets boundary**: Process integration secrets only in backend/service role flows; never send full credential payloads back to frontend in responses.
+- **Integration logs**: Write structured logs (`provider`, `level`, `action`, `message`, `context`) for connect/test/sync steps so failures are traceable per workspace.
+- **Provider adapters**: Implement provider modules behind a common interface (`connect`, `test`, `sync`) and isolate provider-specific API logic from route handlers.

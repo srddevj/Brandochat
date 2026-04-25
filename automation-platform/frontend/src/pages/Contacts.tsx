@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { parseContactMetadataJson } from '../lib/contact-metadata'
 import { useWorkspaceId } from '../shared/hooks/useWorkspaceId'
 import { Button } from '../shared/ui/button'
 import { FormError } from '../shared/ui/form-error'
@@ -17,31 +16,152 @@ type Contact = {
   metadata: Record<string, unknown> | null
 }
 
-const EMPTY_METADATA_JSON = '{\n  \n}'
+type AttributeType = 'string' | 'date' | 'datetime' | 'url' | 'integer'
+
+type AttributeInput = {
+  id: string
+  name: string
+  type: AttributeType
+  value: string
+}
+
+const ATTRIBUTE_TYPES: Array<{ value: AttributeType; label: string }> = [
+  { value: 'string', label: 'String' },
+  { value: 'date', label: 'Date' },
+  { value: 'datetime', label: 'Date & time' },
+  { value: 'url', label: 'URL' },
+  { value: 'integer', label: 'Integer' },
+]
+
+const GENDER_OPTIONS = ['', 'female', 'male', 'non_binary', 'unknown'] as const
+const PAGE_SIZE = 1000
+
+function emptyAttribute(): AttributeInput {
+  return { id: crypto.randomUUID(), name: '', type: 'string', value: '' }
+}
+
+function attributeInputType(type: AttributeType): React.HTMLInputTypeAttribute {
+  if (type === 'date') return 'date'
+  if (type === 'datetime') return 'datetime-local'
+  if (type === 'url') return 'url'
+  if (type === 'integer') return 'number'
+  return 'text'
+}
+
+function safeAttributeKey(name: string): string {
+  return name.trim().replace(/[^\w.-]/g, '_')
+}
+
+function metadataFromForm(input: {
+  firstName: string
+  lastName: string
+  gender: string
+  birthday: string
+  attributes: AttributeInput[]
+  baseMetadata?: Record<string, unknown> | null
+}): Record<string, unknown> {
+  const customAttributes: Record<string, { type: AttributeType; value: string | number }> = {}
+  for (const attr of input.attributes) {
+    const key = safeAttributeKey(attr.name)
+    if (!key) continue
+    customAttributes[key] = {
+      type: attr.type,
+      value: attr.type === 'integer' ? Number(attr.value || 0) : attr.value,
+    }
+  }
+
+  return {
+    ...(input.baseMetadata ?? {}),
+    first_name: input.firstName.trim(),
+    last_name: input.lastName.trim(),
+    gender: input.gender || null,
+    birthday: input.birthday || null,
+    custom_attributes: customAttributes,
+  }
+}
+
+function normalizePhoneE164(value: string): string | null {
+  const digits = value.replace(/\D/g, '')
+  return digits ? `+${digits}` : null
+}
+
+function phoneFromJid(jid: string): string | null {
+  if (!jid.endsWith('@s.whatsapp.net')) return null
+  return normalizePhoneE164(jid.split('@')[0] ?? '')
+}
+
+function displayName(firstName: string, lastName: string): string | null {
+  return [firstName.trim(), lastName.trim()].filter(Boolean).join(' ') || null
+}
+
+function standardField(row: Contact, key: string): string {
+  const value = row.metadata?.[key]
+  return typeof value === 'string' ? value : ''
+}
+
+function attributesFromMetadata(metadata: Contact['metadata']): AttributeInput[] {
+  const raw = metadata?.custom_attributes
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return [emptyAttribute()]
+
+  const rows = Object.entries(raw as Record<string, unknown>).map(([name, value]) => {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const typed = value as { type?: AttributeType; value?: unknown }
+      return {
+        id: crypto.randomUUID(),
+        name,
+        type: typed.type ?? 'string',
+        value: typed.value == null ? '' : String(typed.value),
+      }
+    }
+    return { id: crypto.randomUUID(), name, type: 'string' as const, value: String(value ?? '') }
+  })
+  return rows.length > 0 ? rows : [emptyAttribute()]
+}
 
 export default function ContactsPage() {
   const workspaceId = useWorkspaceId()
   const [rows, setRows] = useState<Contact[]>([])
   const [waJid, setWaJid] = useState('')
-  const [displayName, setDisplayName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [gender, setGender] = useState('')
+  const [birthday, setBirthday] = useState('')
   const [notes, setNotes] = useState('')
-  const [metadataJson, setMetadataJson] = useState(EMPTY_METADATA_JSON)
+  const [attributes, setAttributes] = useState<AttributeInput[]>([emptyAttribute()])
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editMetaJson, setEditMetaJson] = useState('')
+  const [editWaJid, setEditWaJid] = useState('')
+  const [editPhone, setEditPhone] = useState('')
+  const [editDisplayName, setEditDisplayName] = useState('')
+  const [editFirstName, setEditFirstName] = useState('')
+  const [editLastName, setEditLastName] = useState('')
+  const [editGender, setEditGender] = useState('')
+  const [editBirthday, setEditBirthday] = useState('')
+  const [editNotes, setEditNotes] = useState('')
+  const [editAttributes, setEditAttributes] = useState<AttributeInput[]>([emptyAttribute()])
+  const [showCreate, setShowCreate] = useState(false)
+  const [search, setSearch] = useState('')
 
   const load = useCallback(async () => {
     if (!workspaceId) return
-    const { data, error: loadErr } = await supabase
-      .from('contacts')
-      .select('id, wa_jid, phone_e164, display_name, notes, metadata')
-      .eq('workspace_id', workspaceId)
-      .order('created_at', { ascending: false })
-    if (loadErr) {
-      setError(loadErr.message)
-      return
+    const allRows: Contact[] = []
+    for (let from = 0; ; from += PAGE_SIZE) {
+      const { data, error: loadErr } = await supabase
+        .from('contacts')
+        .select('id, wa_jid, phone_e164, display_name, notes, metadata')
+        .eq('workspace_id', workspaceId)
+        .order('created_at', { ascending: false })
+        .range(from, from + PAGE_SIZE - 1)
+      if (loadErr) {
+        setError(loadErr.message)
+        return
+      }
+      const page = (data as Contact[]) ?? []
+      allRows.push(...page)
+      if (page.length < PAGE_SIZE) break
     }
-    setRows((data as Contact[]) ?? [])
+    setRows(allRows)
   }, [workspaceId])
 
   useEffect(() => {
@@ -52,17 +172,12 @@ export default function ContactsPage() {
     event.preventDefault()
     if (!workspaceId) return
     setError(null)
-    let metadata: Record<string, unknown>
-    try {
-      metadata = parseContactMetadataJson(metadataJson)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Invalid JSON')
-      return
-    }
+    const metadata = metadataFromForm({ firstName, lastName, gender, birthday, attributes })
     const { error: insertErr } = await supabase.from('contacts').insert({
       workspace_id: workspaceId,
       wa_jid: waJid.trim(),
-      display_name: displayName.trim() || null,
+      phone_e164: normalizePhoneE164(phone) ?? phoneFromJid(waJid.trim()),
+      display_name: displayName(firstName, lastName),
       notes: notes.trim() || null,
       metadata,
     })
@@ -71,28 +186,53 @@ export default function ContactsPage() {
       return
     }
     setWaJid('')
-    setDisplayName('')
+    setPhone('')
+    setFirstName('')
+    setLastName('')
+    setGender('')
+    setBirthday('')
     setNotes('')
-    setMetadataJson(EMPTY_METADATA_JSON)
+    setAttributes([emptyAttribute()])
     await load()
   }
 
-  function openMetadataEditor(row: Contact) {
+  function openEditor(row: Contact) {
     setEditingId(row.id)
-    setEditMetaJson(JSON.stringify(row.metadata ?? {}, null, 2))
+    setEditWaJid(row.wa_jid)
+    setEditPhone(row.phone_e164 ?? '')
+    setEditDisplayName(row.display_name ?? '')
+    setEditFirstName(standardField(row, 'first_name'))
+    setEditLastName(standardField(row, 'last_name'))
+    setEditGender(standardField(row, 'gender'))
+    setEditBirthday(standardField(row, 'birthday'))
+    setEditNotes(row.notes ?? '')
+    setEditAttributes(attributesFromMetadata(row.metadata))
     setError(null)
   }
 
-  async function saveMetadata(rowId: string) {
+  async function saveContact(rowId: string) {
     setError(null)
-    let metadata: Record<string, unknown>
-    try {
-      metadata = parseContactMetadataJson(editMetaJson)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Invalid JSON')
-      return
-    }
-    const { error: updateErr } = await supabase.from('contacts').update({ metadata }).eq('id', rowId)
+    const currentRow = rows.find((row) => row.id === rowId)
+    const metadata = metadataFromForm({
+      firstName: editFirstName,
+      lastName: editLastName,
+      gender: editGender,
+      birthday: editBirthday,
+      attributes: editAttributes,
+      baseMetadata: currentRow?.metadata ?? null,
+    })
+    const nextDisplayName = editDisplayName.trim() || displayName(editFirstName, editLastName)
+    const nextWaJid = editWaJid.trim()
+    const { error: updateErr } = await supabase
+      .from('contacts')
+      .update({
+        wa_jid: nextWaJid,
+        phone_e164: normalizePhoneE164(editPhone) ?? phoneFromJid(nextWaJid),
+        display_name: nextDisplayName,
+        notes: editNotes.trim() || null,
+        metadata,
+      })
+      .eq('id', rowId)
     if (updateErr) {
       setError(updateErr.message)
       return
@@ -105,24 +245,68 @@ export default function ContactsPage() {
     return <p className="text-slate-500">Missing workspace.</p>
   }
 
+  const visibleRows = rows.filter((row) => {
+    const haystack = [row.display_name, row.wa_jid, row.phone_e164, standardField(row, 'first_name'), standardField(row, 'last_name')]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+    return haystack.includes(search.toLowerCase())
+  })
+
   return (
     <div className="space-y-8">
-      <PageHeader
-        title="Contacts"
-        description="WhatsApp identities and JSON metadata used as {{contact.attr.*}} placeholders in templates."
-      />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <PageHeader
+          title={`All contacts ${rows.length ? `(${rows.length})` : ''}`}
+          description="Manage workspace contacts and custom attributes used in automation placeholders."
+        />
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="secondary" className="bg-white/5">
+            Export all
+          </Button>
+          <Button type="button" variant="secondary" className="bg-white/5">
+            Import
+          </Button>
+          <Button type="button" onClick={() => setShowCreate((value) => !value)}>
+            {showCreate ? 'Close form' : 'New contact'}
+          </Button>
+        </div>
+      </div>
       <FormError message={error} />
 
+      {showCreate ? (
       <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
         <p className="text-sm text-slate-400">
           JID example: <code className="text-emerald-300">491234567890@s.whatsapp.net</code>
         </p>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <FormField label="WhatsApp JID" className="sm:col-span-2">
             <TextInput required value={waJid} onChange={(e) => setWaJid(e.target.value)} placeholder="wa_jid" />
           </FormField>
-          <FormField label="Display name">
-            <TextInput value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+          <FormField label="Phone (E.164)">
+            <TextInput value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+491234567890" />
+          </FormField>
+          <FormField label="First name">
+            <TextInput value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+          </FormField>
+          <FormField label="Last name">
+            <TextInput value={lastName} onChange={(e) => setLastName(e.target.value)} />
+          </FormField>
+          <FormField label="Gender">
+            <select
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+            >
+              {GENDER_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option ? option.replace('_', ' ') : 'Not set'}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label="Birthday">
+            <TextInput type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} />
           </FormField>
         </div>
         <FormField label="Notes">
@@ -133,65 +317,224 @@ export default function ContactsPage() {
             className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none ring-emerald-500/50 focus:ring-2"
           />
         </FormField>
-        <FormField
-          label="Custom attributes (JSON object)"
-          hint='Templates can use e.g. {{contact.attr.plan}} for {"plan":"Pro"}.'
-        >
-          <textarea
-            value={metadataJson}
-            onChange={(e) => setMetadataJson(e.target.value)}
-            rows={4}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-xs text-slate-200"
-          />
-        </FormField>
+        <CustomAttributesEditor attributes={attributes} onChange={setAttributes} />
         <Button type="submit" variant="primary">
           Add contact
         </Button>
       </form>
+      ) : null}
 
-      <ul className="divide-y divide-slate-800 rounded-xl border border-slate-800">
-        {rows.length === 0 ? (
-          <li className="p-4 text-sm text-slate-500">No contacts yet.</li>
-        ) : (
-          rows.map((row) => (
-            <li key={row.id} className="p-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="font-medium text-white">{row.display_name || row.wa_jid}</p>
-                  <p className="font-mono text-xs text-slate-500">{row.wa_jid}</p>
-                  {row.notes ? <p className="mt-1 max-w-md text-sm text-slate-400">{row.notes}</p> : null}
-                  {row.metadata && Object.keys(row.metadata).length > 0 ? (
-                    <pre className="mt-2 max-w-xl overflow-x-auto rounded bg-slate-950/80 p-2 font-mono text-xs text-slate-400">
-                      {JSON.stringify(row.metadata, null, 2)}
-                    </pre>
-                  ) : null}
-                </div>
-                <Button type="button" variant="secondary" className="shrink-0 self-start py-1.5 text-xs" onClick={() => openMetadataEditor(row)}>
-                  Edit attributes
-                </Button>
-              </div>
-              {editingId === row.id ? (
-                <div className="mt-3 space-y-2 border-t border-slate-800 pt-3">
-                  <textarea
-                    value={editMetaJson}
-                    onChange={(e) => setEditMetaJson(e.target.value)}
-                    rows={5}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-xs text-slate-200"
-                  />
-                  <div className="flex gap-2">
-                    <Button type="button" variant="primary" className="py-1.5 text-xs" onClick={() => void saveMetadata(row.id)}>
-                      Save JSON
-                    </Button>
-                    <Button type="button" variant="secondary" className="py-1.5 text-xs" onClick={() => setEditingId(null)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : null}
-            </li>
-          ))
-        )}
-      </ul>
+      {editingId ? (
+        <section className="rounded-2xl border border-emerald-500/30 bg-slate-900/80 p-4 shadow-xl shadow-emerald-950/10">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-emerald-300">Editing contact</p>
+              <h2 className="mt-1 text-lg font-semibold text-white">{editDisplayName || editWaJid}</h2>
+              <p className="mt-1 font-mono text-xs text-slate-500">{editingId}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="primary" className="py-1.5 text-xs" onClick={() => void saveContact(editingId)}>
+                Save contact
+              </Button>
+              <Button type="button" variant="secondary" className="py-1.5 text-xs" onClick={() => setEditingId(null)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FormField label="Display name">
+              <TextInput value={editDisplayName} onChange={(e) => setEditDisplayName(e.target.value)} placeholder="Customer name" />
+            </FormField>
+            <FormField label="WhatsApp JID">
+              <TextInput value={editWaJid} onChange={(e) => setEditWaJid(e.target.value)} placeholder="491234567890@s.whatsapp.net" />
+            </FormField>
+            <FormField label="Phone">
+              <TextInput value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="+491234567890" />
+            </FormField>
+            <FormField label="First name">
+              <TextInput value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} />
+            </FormField>
+            <FormField label="Last name">
+              <TextInput value={editLastName} onChange={(e) => setEditLastName(e.target.value)} />
+            </FormField>
+            <FormField label="Gender">
+              <select
+                value={editGender}
+                onChange={(e) => setEditGender(e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              >
+                {GENDER_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option ? option.replace('_', ' ') : 'Not set'}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+            <FormField label="Birthday">
+              <TextInput type="date" value={editBirthday} onChange={(e) => setEditBirthday(e.target.value)} />
+            </FormField>
+          </div>
+          <FormField label="Notes" className="mt-3">
+            <textarea
+              value={editNotes}
+              onChange={(e) => setEditNotes(e.target.value)}
+              rows={2}
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none ring-emerald-500/50 focus:ring-2"
+            />
+          </FormField>
+          <div className="mt-3">
+            <CustomAttributesEditor attributes={editAttributes} onChange={setEditAttributes} compact />
+          </div>
+        </section>
+      ) : null}
+
+      <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50">
+        <div className="flex flex-col gap-3 border-b border-slate-800 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <TextInput
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search for contact..."
+            className="max-w-md"
+          />
+          <div className="flex gap-2 text-xs text-slate-500">
+            <span>Page size: 100</span>
+            <span>1 / 1</span>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="border-b border-slate-800 bg-slate-950/50 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-3">Name</th>
+                <th className="px-4 py-3">Conversations</th>
+                <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Phone</th>
+                <th className="px-4 py-3">Label</th>
+                <th className="px-4 py-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {visibleRows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                    No contacts found.
+                  </td>
+                </tr>
+              ) : (
+                visibleRows.map((row) => (
+                  <tr key={row.id} className="align-top hover:bg-slate-800/30">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-slate-300">
+                          {(row.display_name || row.wa_jid).slice(0, 2).toUpperCase()}
+                        </span>
+                        <div>
+                          <p className="font-medium text-white">{row.display_name || row.wa_jid}</p>
+                          <p className="font-mono text-xs text-slate-500">{row.wa_jid}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-slate-400">WhatsApp</td>
+                    <td className="px-4 py-3 text-slate-500">-</td>
+                    <td className="px-4 py-3 text-slate-300">{row.phone_e164 || '-'}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {[standardField(row, 'gender'), standardField(row, 'birthday')].filter(Boolean).map((label) => (
+                          <span key={label} className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
+                            {label}
+                          </span>
+                        ))}
+                        <AttributePills metadata={row.metadata} />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button type="button" variant="ghost" className="py-1.5 text-xs" onClick={() => openEditor(row)}>
+                        Edit
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  )
+}
+
+function CustomAttributesEditor({
+  attributes,
+  onChange,
+  compact = false,
+}: {
+  attributes: AttributeInput[]
+  onChange: (attributes: AttributeInput[]) => void
+  compact?: boolean
+}) {
+  function update(id: string, patch: Partial<AttributeInput>) {
+    onChange(attributes.map((attr) => (attr.id === id ? { ...attr, ...patch } : attr)))
+  }
+
+  function remove(id: string) {
+    const next = attributes.filter((attr) => attr.id !== id)
+    onChange(next.length > 0 ? next : [emptyAttribute()])
+  }
+
+  return (
+    <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+      <div>
+        <h2 className="text-sm font-medium text-white">Custom attributes</h2>
+        {!compact ? (
+          <p className="mt-1 text-xs text-slate-500">
+            These become template placeholders like <code className="text-emerald-300">{'{{contact.attr.plan}}'}</code>.
+          </p>
+        ) : null}
+      </div>
+      {attributes.map((attr) => (
+        <div key={attr.id} className="grid gap-2 sm:grid-cols-[1fr_150px_1fr_auto]">
+          <TextInput placeholder="Attribute name" value={attr.name} onChange={(e) => update(attr.id, { name: e.target.value })} />
+          <select
+            value={attr.type}
+            onChange={(e) => update(attr.id, { type: e.target.value as AttributeType, value: '' })}
+            className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+          >
+            {ATTRIBUTE_TYPES.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+          <TextInput
+            type={attributeInputType(attr.type)}
+            step={attr.type === 'integer' ? 1 : undefined}
+            placeholder="Value"
+            value={attr.value}
+            onChange={(e) => update(attr.id, { value: e.target.value })}
+          />
+          <Button type="button" variant="ghost" className="px-3" onClick={() => remove(attr.id)}>
+            Remove
+          </Button>
+        </div>
+      ))}
+      <Button type="button" variant="secondary" className="py-1.5 text-xs" onClick={() => onChange([...attributes, emptyAttribute()])}>
+        Add attribute
+      </Button>
+    </section>
+  )
+}
+
+function AttributePills({ metadata }: { metadata: Contact['metadata'] }) {
+  const attrs = attributesFromMetadata(metadata).filter((attr) => attr.name && attr.value)
+  if (attrs.length === 0) return null
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {attrs.map((attr) => (
+        <span key={attr.id} className="rounded-full border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs text-slate-300">
+          {attr.name}: <span className="text-emerald-300">{attr.value}</span>
+        </span>
+      ))}
     </div>
   )
 }
