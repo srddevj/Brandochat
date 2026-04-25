@@ -109,6 +109,10 @@ export type WhatsAppInstance = {
     }
     lastError?: string
   } | null
+  settings?: {
+    always_sync_history?: boolean
+    skip_phone_notifications?: boolean
+  } | null
 }
 
 export async function waInstances(workspaceId: string) {
@@ -149,6 +153,20 @@ export async function waSyncInstance(workspaceId: string, instanceId: string) {
   })
   if (!res.ok) throw new Error(await readApiError(res))
   return res.json() as Promise<{ ok: boolean }>
+}
+
+export async function waUpdateInstanceSettings(
+  workspaceId: string,
+  instanceId: string,
+  settings: { always_sync_history?: boolean; skip_phone_notifications?: boolean },
+) {
+  const res = await fetchWithAuth(`${base}/wa/${workspaceId}/instances/${instanceId}/settings`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  })
+  if (!res.ok) throw new Error(await readApiError(res))
+  return res.json() as Promise<{ ok: boolean; settings: { always_sync_history: boolean; skip_phone_notifications: boolean } }>
 }
 
 export async function waSyncChat(workspaceId: string, instanceId: string, contactId: string) {

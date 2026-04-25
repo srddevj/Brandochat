@@ -17,11 +17,15 @@ import {
   sendWorkspaceTextMessage,
 } from '../wa/baileysSession.js'
 
+function readSettings(raw: unknown): Record<string, unknown> {
+  return raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {}
+}
+
 async function getOrCreateDefaultInstance(workspaceId: string) {
   const admin = getServiceRoleClient()
   const { data: existing } = await admin
     .from('whatsapp_instances')
-    .select('id, display_name, pairing_status, phone_label, last_error, is_default, created_at')
+    .select('id, display_name, pairing_status, phone_label, last_error, is_default, created_at, settings')
     .eq('workspace_id', workspaceId)
     .eq('is_default', true)
     .maybeSingle()
@@ -30,7 +34,7 @@ async function getOrCreateDefaultInstance(workspaceId: string) {
 
   const { data: first } = await admin
     .from('whatsapp_instances')
-    .select('id, display_name, pairing_status, phone_label, last_error, is_default, created_at')
+    .select('id, display_name, pairing_status, phone_label, last_error, is_default, created_at, settings')
     .eq('workspace_id', workspaceId)
     .order('created_at', { ascending: true })
     .limit(1)
@@ -48,8 +52,12 @@ async function getOrCreateDefaultInstance(workspaceId: string) {
       display_name: 'Primary WhatsApp',
       pairing_status: 'disconnected',
       is_default: true,
+      settings: {
+        always_sync_history: true,
+        skip_phone_notifications: false,
+      },
     })
-    .select('id, display_name, pairing_status, phone_label, last_error, is_default, created_at')
+    .select('id, display_name, pairing_status, phone_label, last_error, is_default, created_at, settings')
     .single()
 
   if (error || !created) {
@@ -69,7 +77,7 @@ export function createWaRouter(): Router {
       const admin = getServiceRoleClient()
       const { data, error } = await admin
         .from('whatsapp_instances')
-        .select('id, display_name, pairing_status, phone_label, last_error, is_default, created_at')
+        .select('id, display_name, pairing_status, phone_label, last_error, is_default, created_at, settings')
         .eq('workspace_id', workspaceId)
         .order('created_at', { ascending: true })
 
@@ -113,12 +121,44 @@ export function createWaRouter(): Router {
           display_name: body.displayName?.trim() || `WhatsApp ${(count ?? 0) + 1}`,
           pairing_status: 'disconnected',
           is_default: (count ?? 0) === 0,
+          settings: {
+            always_sync_history: true,
+            skip_phone_notifications: false,
+          },
         })
-        .select('id, display_name, pairing_status, phone_label, last_error, is_default, created_at')
+        .select('id, display_name, pairing_status, phone_label, last_error, is_default, created_at, settings')
         .single()
 
       if (error || !data) throw new Error(error?.message ?? 'Failed to create WhatsApp instance')
       res.json({ instance: data })
+    }),
+  )
+
+  router.post(
+    '/instances/:instanceId/settings',
+    asyncHandler(async (req, res) => {
+      const workspaceId = readWorkspaceId(req)
+      const instanceId = String(req.params.instanceId)
+      const body = req.body as { always_sync_history?: boolean; skip_phone_notifications?: boolean }
+      const admin = getServiceRoleClient()
+      const { data: current, error: currentErr } = await admin
+        .from('whatsapp_instances')
+        .select('settings')
+        .eq('workspace_id', workspaceId)
+        .eq('id', instanceId)
+        .single()
+      if (currentErr || !current) {
+        res.status(404).json({ error: 'WhatsApp instance not found' })
+        return
+      }
+      const settings = {
+        ...readSettings(current.settings),
+        always_sync_history: body.always_sync_history !== false,
+        skip_phone_notifications: body.skip_phone_notifications === true,
+      }
+      const { error: updateErr } = await admin.from('whatsapp_instances').update({ settings }).eq('id', instanceId)
+      if (updateErr) throw new Error(updateErr.message)
+      res.json({ ok: true, settings })
     }),
   )
 

@@ -98,6 +98,13 @@ async function upsertInstance(
     .eq('id', instanceId)
 }
 
+async function loadInstanceSettings(instanceId: string): Promise<Record<string, unknown>> {
+  const admin = getServiceRoleClient()
+  const { data } = await admin.from('whatsapp_instances').select('settings').eq('id', instanceId).maybeSingle()
+  const settings = data?.settings
+  return settings && typeof settings === 'object' && !Array.isArray(settings) ? (settings as Record<string, unknown>) : {}
+}
+
 function unwrapMessage(message: unknown): Record<string, unknown> | null {
   if (!message || typeof message !== 'object' || Array.isArray(message)) return null
   const m = message as Record<string, unknown>
@@ -403,6 +410,9 @@ export async function ensureWorkspaceSocket(workspaceId: string, instanceId: str
   await fs.mkdir(dir, { recursive: true })
 
   const admin = getServiceRoleClient()
+  const instanceSettings = await loadInstanceSettings(instanceId)
+  const alwaysSyncHistory = instanceSettings.always_sync_history !== false
+  const skipPhoneNotifications = instanceSettings.skip_phone_notifications === true
   const { state, saveCreds } = await useMultiFileAuthState(dir)
   const { version } = await fetchLatestBaileysVersion()
 
@@ -415,8 +425,10 @@ export async function ensureWorkspaceSocket(workspaceId: string, instanceId: str
       keys: makeCacheableSignalKeyStore(state.keys, logger),
     },
     msgRetryCounterCache,
-    syncFullHistory: true,
-    shouldSyncHistoryMessage: () => true,
+    syncFullHistory: alwaysSyncHistory,
+    shouldSyncHistoryMessage: () => alwaysSyncHistory,
+    // true => mark online and reduce phone push notifications while desktop/web is active
+    markOnlineOnConnect: skipPhoneNotifications,
     getMessage: async () => undefined,
   })
 

@@ -7,6 +7,7 @@ import {
   waDisconnectInstance,
   waInstances,
   waSyncInstance,
+  waUpdateInstanceSettings,
   type WhatsAppInstance,
 } from '../lib/api'
 import { Button } from '../shared/ui/button'
@@ -163,6 +164,12 @@ export default function WhatsApp() {
               {instance.last_error ? <p className="text-sm text-red-400">{instance.last_error}</p> : null}
 
               <SyncActivity instance={instance} />
+              <ConnectionSettings
+                instance={instance}
+                workspaceId={workspaceId}
+                onSaved={() => void load()}
+                onError={(message) => setError(message)}
+              />
 
               {instance.qr ? (
                 <div className="inline-block rounded-xl border border-slate-800 bg-white p-4">
@@ -241,6 +248,68 @@ function SyncActivity({ instance }: { instance: WhatsAppInstance }) {
       </div>
 
       {sync.lastError ? <p className="text-xs text-red-300">{sync.lastError}</p> : null}
+    </div>
+  )
+}
+
+function ConnectionSettings({
+  instance,
+  workspaceId,
+  onSaved,
+  onError,
+}: {
+  instance: WhatsAppInstance
+  workspaceId?: string
+  onSaved: () => void
+  onError: (message: string) => void
+}) {
+  const [alwaysSyncHistory, setAlwaysSyncHistory] = useState(instance.settings?.always_sync_history !== false)
+  const [skipPhoneNotifications, setSkipPhoneNotifications] = useState(instance.settings?.skip_phone_notifications === true)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setAlwaysSyncHistory(instance.settings?.always_sync_history !== false)
+    setSkipPhoneNotifications(instance.settings?.skip_phone_notifications === true)
+  }, [instance.id, instance.settings?.always_sync_history, instance.settings?.skip_phone_notifications])
+
+  async function saveSettings() {
+    if (!workspaceId) return
+    setSaving(true)
+    try {
+      await waUpdateInstanceSettings(workspaceId, instance.id, {
+        always_sync_history: alwaysSyncHistory,
+        skip_phone_notifications: skipPhoneNotifications,
+      })
+      onSaved()
+    } catch (e) {
+      onError(e instanceof Error ? e.message : 'Failed to save settings')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+      <p className="text-sm font-medium text-white">Connection settings</p>
+      <label className="flex items-start gap-2 text-sm text-slate-300">
+        <input type="checkbox" checked={alwaysSyncHistory} onChange={(event) => setAlwaysSyncHistory(event.target.checked)} />
+        <span>
+          <span className="block">Always sync message history</span>
+          <span className="text-xs text-slate-500">Keeps history sync active on connect so new/older chats are fetched.</span>
+        </span>
+      </label>
+      <label className="flex items-start gap-2 text-sm text-slate-300">
+        <input type="checkbox" checked={skipPhoneNotifications} onChange={(event) => setSkipPhoneNotifications(event.target.checked)} />
+        <span>
+          <span className="block">Skip phone notifications while connected</span>
+          <span className="text-xs text-slate-500">
+            Marks this WhatsApp as online on desktop/web session. This can reduce push notifications on the mobile phone.
+          </span>
+        </span>
+      </label>
+      <Button type="button" variant="secondary" className="px-3 py-1.5 text-xs" disabled={saving} onClick={() => void saveSettings()}>
+        {saving ? 'Saving…' : 'Save connection settings'}
+      </Button>
     </div>
   )
 }
