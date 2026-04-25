@@ -4,7 +4,7 @@ import OpenAI from 'openai'
 import { env } from '../config/env.js'
 import { applyTemplateVars, buildContactPlaceholderVars, readVariable, type AutomationGraph } from './graphRuntime.js'
 import type { AutomationRunRow } from './types.js'
-import { sendWorkspaceTextMessage } from '../wa/baileysSession.js'
+import { ensureWorkspaceWhatsAppConnected, sendWorkspaceTextMessage } from '../wa/baileysSession.js'
 
 export type FlowStateRow = {
   id: string
@@ -20,6 +20,9 @@ type TraceEntry = {
   event: string
   detail?: Record<string, unknown>
 }
+
+const SEND_RETRY_ATTEMPTS = 3
+const SEND_RETRY_DELAY_MS = 10_000
 
 function toTemplateVars(vars: Record<string, unknown>): Record<string, string> {
   return Object.fromEntries(Object.entries(vars).map(([key, value]) => [key, value == null ? '' : String(value)]))
@@ -72,6 +75,10 @@ async function runAiSkill(instructions: string, variables: Record<string, string
     ],
   })
   return response.choices[0]?.message?.content?.trim() || ''
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 async function loadContactVars(admin: SupabaseClient, contactId?: string | null): Promise<Record<string, string>> {
@@ -261,12 +268,27 @@ async function executeStateMachine(
         const sent = await args.sock.sendMessage(recipientJid, { text: body })
         waMessageId = sent?.key.id ?? null
       } else {
-        const sent = await sendWorkspaceTextMessage({
-          workspaceId: args.workspaceId,
-          jid: recipientJid,
-          text: body,
-        })
-        waMessageId = sent.waMessageId
+        let sentError: unknown = null
+        for (let attempt = 1; attempt <= SEND_RETRY_ATTEMPTS; attempt += 1) {
+          try {
+            await ensureWorkspaceWhatsAppConnected(args.workspaceId).catch(() => false)
+            const sent = await sendWorkspaceTextMessage({
+              workspaceId: args.workspaceId,
+              jid: recipientJid,
+              text: body,
+            })
+            waMessageId = sent.waMessageId
+            sentError = null
+            break
+          } catch (error) {
+            sentError = error
+            const message = error instanceof Error ? error.message : String(error)
+            const isNotConnected = message.includes('WhatsApp is not connected')
+            if (!isNotConnected || attempt === SEND_RETRY_ATTEMPTS) break
+            await sleep(SEND_RETRY_DELAY_MS)
+          }
+        }
+        if (sentError) throw sentError
       }
       await admin.from('message_events').insert({
         workspace_id: args.workspaceId,
