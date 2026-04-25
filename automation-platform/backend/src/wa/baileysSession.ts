@@ -361,8 +361,31 @@ export async function sendWorkspaceTextMessage(args: {
     throw new Error('WhatsApp is not connected for this workspace. Click Start / refresh, scan the QR if shown, then send again.')
   }
 
-  const sent = await session.sock.sendMessage(args.jid, { text: args.text })
-  return { waMessageId: sent?.key.id ?? null }
+  try {
+    const sent = await session.sock.sendMessage(args.jid, { text: args.text })
+    return { waMessageId: sent?.key.id ?? null }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const isRetryableSendFailure = message.includes('timed out waiting for message') || message.includes('Connection Closed')
+    if (!isRetryableSendFailure) throw error
+
+    // Recover from a half-open/stale socket by forcing a reconnect and retrying once.
+    const failedInstanceId = session.instanceId
+    try {
+      session.sock.end(undefined)
+    } catch {
+      /* ignore */
+    }
+    session.sock = null
+    session.pairing_status = 'disconnected'
+    await ensureWorkspaceSocket(args.workspaceId, failedInstanceId).catch(() => false)
+    const recovered = await waitForConnected(failedInstanceId, SEND_CONNECT_TIMEOUT_MS)
+    if (!recovered?.sock) {
+      throw error
+    }
+    const resent = await recovered.sock.sendMessage(args.jid, { text: args.text })
+    return { waMessageId: resent?.key.id ?? null }
+  }
 }
 
 export async function ensureWorkspaceWhatsAppConnected(workspaceId: string): Promise<boolean> {
