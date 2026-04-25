@@ -63,27 +63,20 @@ export default function Templates() {
     void load()
     if (!workspaceId) return
     void (async () => {
-      const [{ data: integrations }, { data: contacts }] = await Promise.all([
+      const [{ data: integrations }, { data: workspaceFields }] = await Promise.all([
         supabase
           .from('workspace_integrations')
           .select('provider')
           .eq('workspace_id', workspaceId)
           .eq('status', 'active'),
-        supabase.from('contacts').select('metadata').eq('workspace_id', workspaceId).limit(200),
+        supabase.from('workspace_contact_fields').select('key, label').eq('workspace_id', workspaceId).order('created_at', { ascending: true }),
       ])
 
       const providers = ((integrations ?? []) as Array<{ provider: string }>).map((row) => row.provider)
 
-      const customKeys = new Set<string>()
-      for (const row of contacts ?? []) {
-        const metadata = row.metadata as Record<string, unknown> | null
-        const attrs = metadata?.custom_attributes
-        if (!attrs || typeof attrs !== 'object' || Array.isArray(attrs)) continue
-        for (const key of Object.keys(attrs as Record<string, unknown>)) customKeys.add(key)
-      }
-      const customPlaceholders = [...customKeys].sort().map((key) => ({
-        value: `contact.attr.${key.replace(/[^\w.-]/g, '_')}`,
-        label: key,
+      const customPlaceholders = ((workspaceFields ?? []) as Array<{ key: string; label: string }>).map((field) => ({
+        value: `contact.attr.${field.key.replace(/[^\w.-]/g, '_')}`,
+        label: field.label || field.key,
         group: 'Custom attributes',
       }))
       const integrationPlaceholders = providers.includes('calendly') ? CALENDLY_PLACEHOLDERS : []

@@ -9,7 +9,7 @@ import { FormField } from '../shared/ui/form-field'
 import { PageHeader } from '../shared/ui/page-header'
 import { TextInput } from '../shared/ui/text-input'
 
-type SettingsSection = 'profile' | 'team' | 'labels' | 'integrations'
+type SettingsSection = 'profile' | 'team' | 'labels' | 'contacts' | 'integrations'
 
 type WorkspaceProfile = {
   id: string
@@ -44,14 +44,35 @@ type LabelRow = {
   description: string | null
 }
 
+type ContactFieldType = 'string' | 'date' | 'datetime' | 'url' | 'integer'
+type ContactFieldRow = {
+  id: string
+  key: string
+  label: string
+  type: ContactFieldType
+  required: boolean
+}
+
 const sections: Array<{ id: SettingsSection; label: string; description: string }> = [
   { id: 'profile', label: 'Profile', description: 'Workspace name, identity, and defaults.' },
   { id: 'team', label: 'Team', description: 'Members, invites, and role planning.' },
   { id: 'labels', label: 'Labels', description: 'Conversation labels for inbox organization.' },
+  { id: 'contacts', label: 'Contacts', description: 'Define workspace-wide custom fields for all contacts.' },
   { id: 'integrations', label: 'Integrations', description: 'Workspace channels and connected tools.' },
 ]
 
+const contactFieldTypeOptions: ContactFieldType[] = ['string', 'date', 'datetime', 'url', 'integer']
+
 const roleOptions = ['owner', 'admin', 'member'] as const
+
+function toFieldKey(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w.-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+}
 
 export default function Settings() {
   const workspaceId = useWorkspaceId()
@@ -62,6 +83,7 @@ export default function Settings() {
   const [members, setMembers] = useState<MemberRow[]>([])
   const [invitations, setInvitations] = useState<InvitationRow[]>([])
   const [labels, setLabels] = useState<LabelRow[]>([])
+  const [contactFields, setContactFields] = useState<ContactFieldRow[]>([])
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [profileForm, setProfileForm] = useState({ name: '', slug: '', description: '', logoUrl: '', timezone: 'UTC' })
@@ -70,6 +92,11 @@ export default function Settings() {
   const [labelName, setLabelName] = useState('')
   const [labelColor, setLabelColor] = useState('#10b981')
   const [labelDescription, setLabelDescription] = useState('')
+  const [fieldKey, setFieldKey] = useState('')
+  const [fieldLabel, setFieldLabel] = useState('')
+  const [fieldType, setFieldType] = useState<ContactFieldType>('string')
+  const [fieldRequired, setFieldRequired] = useState(false)
+  const [isFieldKeyManual, setIsFieldKeyManual] = useState(false)
 
   const activeSection = sections.some((section) => section.id === selectedSection) ? selectedSection : 'profile'
 
@@ -79,7 +106,7 @@ export default function Settings() {
   const loadSettings = useCallback(async () => {
     if (!workspaceId) return
     setError(null)
-    const [workspaceResult, membersResult, invitationsResult, labelsResult] = await Promise.all([
+    const [workspaceResult, membersResult, invitationsResult, labelsResult, contactFieldsResult] = await Promise.all([
       supabase
         .from('workspaces')
         .select('id, name, slug, description, logo_url, timezone')
@@ -92,6 +119,7 @@ export default function Settings() {
         .eq('workspace_id', workspaceId)
         .order('created_at', { ascending: false }),
       supabase.from('workspace_labels').select('id, name, color, description').eq('workspace_id', workspaceId).order('name'),
+      supabase.from('workspace_contact_fields').select('id, key, label, type, required').eq('workspace_id', workspaceId).order('created_at'),
     ])
 
     if (workspaceResult.error) setError(workspaceResult.error.message)
@@ -110,6 +138,8 @@ export default function Settings() {
     else setInvitations((invitationsResult.data as InvitationRow[]) ?? [])
     if (labelsResult.error) setError(labelsResult.error.message)
     else setLabels((labelsResult.data as LabelRow[]) ?? [])
+    if (contactFieldsResult.error) setError(contactFieldsResult.error.message)
+    else setContactFields((contactFieldsResult.data as ContactFieldRow[]) ?? [])
   }, [workspaceId])
 
   useEffect(() => {
@@ -118,6 +148,16 @@ export default function Settings() {
 
   function selectSection(section: SettingsSection) {
     setSearchParams({ section })
+  }
+
+  function handleFieldLabelChange(value: string) {
+    setFieldLabel(value)
+    if (!isFieldKeyManual) setFieldKey(toFieldKey(value))
+  }
+
+  function handleFieldKeyChange(value: string) {
+    setIsFieldKeyManual(true)
+    setFieldKey(toFieldKey(value))
   }
 
   async function saveProfile(event: React.FormEvent) {
@@ -224,6 +264,53 @@ export default function Settings() {
     await loadSettings()
   }
 
+  async function createContactField(event: React.FormEvent) {
+    event.preventDefault()
+    if (!workspaceId) return
+    setError(null)
+    const key = toFieldKey(fieldKey)
+    const label = fieldLabel.trim()
+    if (!key || !label) {
+      setError('Field key and label are required.')
+      return
+    }
+    const { error: createErr } = await supabase.from('workspace_contact_fields').insert({
+      workspace_id: workspaceId,
+      key,
+      label,
+      type: fieldType,
+      required: fieldRequired,
+    })
+    if (createErr) {
+      setError(createErr.message)
+      return
+    }
+    setFieldKey('')
+    setFieldLabel('')
+    setFieldType('string')
+    setFieldRequired(false)
+    setIsFieldKeyManual(false)
+    await loadSettings()
+  }
+
+  async function updateContactField(field: ContactFieldRow, patch: Partial<ContactFieldRow>) {
+    const { error: updateErr } = await supabase.from('workspace_contact_fields').update(patch).eq('id', field.id)
+    if (updateErr) {
+      setError(updateErr.message)
+      return
+    }
+    await loadSettings()
+  }
+
+  async function deleteContactField(fieldId: string) {
+    const { error: deleteErr } = await supabase.from('workspace_contact_fields').delete().eq('id', fieldId)
+    if (deleteErr) {
+      setError(deleteErr.message)
+      return
+    }
+    await loadSettings()
+  }
+
   if (!workspaceId) return <p className="text-slate-500">Missing workspace.</p>
 
   return (
@@ -282,6 +369,26 @@ export default function Settings() {
             onCreate={createLabel}
             onUpdate={updateLabel}
             onDelete={deleteLabel}
+          />
+        ) : null}
+        {activeSection === 'contacts' ? (
+          <ContactsSettingsSection
+            fields={contactFields}
+            fieldKey={fieldKey}
+            fieldLabel={fieldLabel}
+            fieldType={fieldType}
+            fieldRequired={fieldRequired}
+            onFieldKey={handleFieldKeyChange}
+            onFieldLabel={handleFieldLabelChange}
+            onAutoGenerateKey={() => {
+              setIsFieldKeyManual(false)
+              setFieldKey(toFieldKey(fieldLabel))
+            }}
+            onFieldType={setFieldType}
+            onFieldRequired={setFieldRequired}
+            onCreate={createContactField}
+            onUpdate={updateContactField}
+            onDelete={deleteContactField}
           />
         ) : null}
         {activeSection === 'integrations' ? <IntegrationsSection workspaceId={workspaceId} /> : null}
@@ -476,6 +583,76 @@ function LabelsSection(props: {
             <TextInput type="color" value={label.color} onChange={(event) => props.onUpdate(label, { color: event.target.value })} />
             <TextInput value={label.description ?? ''} onChange={(event) => props.onUpdate(label, { description: event.target.value || null })} />
             <Button type="button" variant="ghost" onClick={() => props.onDelete(label.id)}>
+              Delete
+            </Button>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function ContactsSettingsSection(props: {
+  fields: ContactFieldRow[]
+  fieldKey: string
+  fieldLabel: string
+  fieldType: ContactFieldType
+  fieldRequired: boolean
+  onFieldKey: (value: string) => void
+  onFieldLabel: (value: string) => void
+  onAutoGenerateKey: () => void
+  onFieldType: (value: ContactFieldType) => void
+  onFieldRequired: (value: boolean) => void
+  onCreate: (event: React.FormEvent) => void
+  onUpdate: (field: ContactFieldRow, patch: Partial<ContactFieldRow>) => void
+  onDelete: (fieldId: string) => void
+}) {
+  return (
+    <section className="space-y-5 rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+      <PageHeader title="Contact custom fields" description="Create shared custom fields that appear on all contacts and placeholders." />
+      <form onSubmit={props.onCreate} className="grid gap-3 rounded-xl border border-slate-800 bg-slate-950/50 p-4 md:grid-cols-[1fr_180px_140px_auto_auto_auto] md:items-end">
+        <FormField label="Label">
+          <TextInput required value={props.fieldLabel} onChange={(event) => props.onFieldLabel(event.target.value)} placeholder="Meeting datetime" />
+        </FormField>
+        <FormField label="Field key">
+          <TextInput required value={props.fieldKey} onChange={(event) => props.onFieldKey(event.target.value)} placeholder="meeting_datetime" />
+        </FormField>
+        <FormField label="Type">
+          <select value={props.fieldType} onChange={(event) => props.onFieldType(event.target.value as ContactFieldType)} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white">
+            {contactFieldTypeOptions.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+        </FormField>
+        <Button type="button" variant="secondary" onClick={props.onAutoGenerateKey}>
+          Regenerate key
+        </Button>
+        <label className="mb-2 flex items-center gap-2 text-sm text-slate-300">
+          <input type="checkbox" checked={props.fieldRequired} onChange={(event) => props.onFieldRequired(event.target.checked)} />
+          Required
+        </label>
+        <Button type="submit">Add field</Button>
+      </form>
+      <div className="space-y-3">
+        {props.fields.length === 0 ? <p className="text-sm text-slate-500">No custom fields yet.</p> : null}
+        {props.fields.map((field) => (
+          <div key={field.id} className="grid gap-3 rounded-xl border border-slate-800 bg-slate-950/50 p-4 md:grid-cols-[140px_1fr_140px_auto_auto] md:items-center">
+            <TextInput value={field.key} onChange={(event) => props.onUpdate(field, { key: toFieldKey(event.target.value) })} />
+            <TextInput value={field.label} onChange={(event) => props.onUpdate(field, { label: event.target.value })} />
+            <select value={field.type} onChange={(event) => props.onUpdate(field, { type: event.target.value as ContactFieldType })} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white">
+              {contactFieldTypeOptions.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+            <label className="flex items-center gap-2 text-sm text-slate-300">
+              <input type="checkbox" checked={field.required} onChange={(event) => props.onUpdate(field, { required: event.target.checked })} />
+              Required
+            </label>
+            <Button type="button" variant="ghost" onClick={() => props.onDelete(field.id)}>
               Delete
             </Button>
           </div>

@@ -46,6 +46,8 @@ export function triggerMatches(automation: AutomationRow, event: TriggerEvent): 
   }
 
   if (event.type === 'contact.datetime') {
+    const fieldKey = config.fieldKey
+    if (typeof fieldKey === 'string' && fieldKey !== event.payload.fieldKey) return false
     const attr = config.attributePath
     if (typeof attr === 'string' && attr !== event.payload.attributePath) return false
   }

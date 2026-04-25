@@ -36,6 +36,7 @@ type BuilderNode = {
 }
 type TemplateRow = { id: string; name: string; body?: string }
 type WhatsAppInstanceRow = { id: string; display_name: string | null; pairing_status: string | null }
+type WorkspaceContactFieldRow = { key: string; label: string; type: 'string' | 'date' | 'datetime' | 'url' | 'integer' }
 type VariableOption = { value: string; label: string; group: string }
 type PaletteGroup = { title: string; description: string; items: Array<{ type: NodeType; label: string }> }
 type FlowNodeData = Record<string, unknown> & {
@@ -502,6 +503,7 @@ export default function AutomationBuilder() {
   const [selectedId, setSelectedId] = useState('send_1')
   const [templates, setTemplates] = useState<TemplateRow[]>([])
   const [whatsappInstances, setWhatsappInstances] = useState<WhatsAppInstanceRow[]>([])
+  const [datetimeFields, setDatetimeFields] = useState<Array<{ key: string; label: string }>>([])
   const [conditionVariables, setConditionVariables] = useState<VariableOption[]>(BASE_VARIABLE_OPTIONS)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -525,23 +527,22 @@ export default function AutomationBuilder() {
       .then(({ data }) => setWhatsappInstances((data as WhatsAppInstanceRow[]) ?? []))
 
     void supabase
-      .from('contacts')
-      .select('metadata')
+      .from('workspace_contact_fields')
+      .select('key, label, type')
       .eq('workspace_id', workspaceId)
-      .limit(200)
+      .order('created_at', { ascending: true })
       .then(({ data }) => {
-        const customKeys = new Set<string>()
-        for (const row of data ?? []) {
-          const metadata = row.metadata as Record<string, unknown> | null
-          const attrs = metadata?.custom_attributes
-          if (!attrs || typeof attrs !== 'object' || Array.isArray(attrs)) continue
-          for (const key of Object.keys(attrs as Record<string, unknown>)) customKeys.add(key)
-        }
-        const customOptions = [...customKeys].sort().map((key) => ({
-          value: `contact.attr.${key.replace(/[^\w.-]/g, '_')}`,
-          label: `Custom attribute: ${key}`,
+        const rows = ((data ?? []) as WorkspaceContactFieldRow[])
+        const customOptions = rows.map((field) => ({
+          value: `contact.attr.${field.key.replace(/[^\w.-]/g, '_')}`,
+          label: `Custom attribute: ${field.label || field.key}`,
           group: 'Custom attributes',
         }))
+        setDatetimeFields(
+          rows
+            .filter((field) => field.type === 'date' || field.type === 'datetime')
+            .map((field) => ({ key: field.key, label: field.label || field.key })),
+        )
         setConditionVariables([...BASE_VARIABLE_OPTIONS, ...customOptions])
       })
   }, [workspaceId])
@@ -727,7 +728,13 @@ export default function AutomationBuilder() {
               <option value="calendly.event">Calendly event</option>
             </select>
           </FormField>
-          <TriggerConfig triggerType={triggerType} value={triggerConfig} whatsappInstances={whatsappInstances} onChange={setTriggerConfig} />
+          <TriggerConfig
+            triggerType={triggerType}
+            value={triggerConfig}
+            whatsappInstances={whatsappInstances}
+            datetimeFields={datetimeFields}
+            onChange={setTriggerConfig}
+          />
           <PlaceholderHints triggerType={triggerType} />
           {selectedNode ? (
             <NodeProperties node={selectedNode} nodes={nodes} templates={templates} conditionVariables={conditionVariables} onChange={updateSelected} onRename={renameSelected} onDelete={() => deleteNode(selectedNode.id)} />
@@ -885,11 +892,13 @@ function TriggerConfig({
   triggerType,
   value,
   whatsappInstances,
+  datetimeFields,
   onChange,
 }: {
   triggerType: TriggerType
   value: Record<string, unknown>
   whatsappInstances: WhatsAppInstanceRow[]
+  datetimeFields: Array<{ key: string; label: string }>
   onChange: (value: Record<string, unknown>) => void
 }) {
   const calendlyEventOptions = [
@@ -941,14 +950,119 @@ function TriggerConfig({
   )
 
   if (triggerType === 'contact.datetime') {
+    const legacyOffsetMinutes = Number(value.offsetMinutes ?? 0)
+    const direction = value.offsetDirection === 'after' || (typeof value.offsetDirection !== 'string' && legacyOffsetMinutes < 0) ? 'after' : 'before'
+    const unit = value.offsetUnit === 'weeks' || value.offsetUnit === 'days' || value.offsetUnit === 'hours' || value.offsetUnit === 'minutes' ? value.offsetUnit : 'hours'
+    const unitToMinutes = unit === 'weeks' ? 10_080 : unit === 'days' ? 1_440 : unit === 'hours' ? 60 : 1
+    const fallbackAmount = Math.round(Math.abs(legacyOffsetMinutes) / unitToMinutes)
+    const amount = Math.max(0, Number(value.offsetAmount ?? fallbackAmount))
+    const selectedFieldKey =
+      typeof value.fieldKey === 'string' && value.fieldKey
+        ? value.fieldKey
+        : typeof value.attributePath === 'string' && value.attributePath.startsWith('custom_attributes.')
+          ? value.attributePath.slice('custom_attributes.'.length)
+          : ''
+    const signedOffset = direction === 'before' ? amount * unitToMinutes : -amount * unitToMinutes
+    const nextAttributePath = selectedFieldKey ? `custom_attributes.${selectedFieldKey}` : ''
+
     return (
       <>
         {whatsappPicker}
-        <FormField label="Attribute path">
-          <TextInput value={String(value.attributePath ?? 'custom_attributes.follow_up_at')} onChange={(event) => onChange({ ...value, attributePath: event.target.value })} />
+        <FormField label="Date/time field">
+          <select
+            value={selectedFieldKey}
+            onChange={(event) =>
+              onChange({
+                ...value,
+                fieldKey: event.target.value,
+                attributePath: event.target.value ? `custom_attributes.${event.target.value}` : '',
+                offsetDirection: direction,
+                offsetAmount: amount,
+                offsetUnit: unit,
+                offsetMinutes: signedOffset,
+              })
+            }
+            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+          >
+            <option value="">Select field</option>
+            {datetimeFields.map((field) => (
+              <option key={field.key} value={field.key}>
+                {field.label} ({field.key})
+              </option>
+            ))}
+          </select>
         </FormField>
-        <FormField label="Offset minutes">
-          <TextInput type="number" value={String(value.offsetMinutes ?? 0)} onChange={(event) => onChange({ ...value, offsetMinutes: Number(event.target.value) })} />
+        {datetimeFields.length === 0 ? <p className="text-xs text-slate-500">No date/datetime contact fields found. Create them in Settings -&gt; Contacts first.</p> : null}
+        <div className="grid gap-3 sm:grid-cols-3">
+          <FormField label="When">
+            <select
+              value={direction}
+              onChange={(event) =>
+                onChange({
+                  ...value,
+                  fieldKey: selectedFieldKey,
+                  attributePath: nextAttributePath,
+                  offsetDirection: event.target.value,
+                  offsetAmount: amount,
+                  offsetUnit: unit,
+                  offsetMinutes: event.target.value === 'before' ? amount * unitToMinutes : -amount * unitToMinutes,
+                })
+              }
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+            >
+              <option value="before">Before</option>
+              <option value="after">After</option>
+            </select>
+          </FormField>
+          <FormField label="Amount">
+            <TextInput
+              type="number"
+              min={0}
+              value={String(amount)}
+              onChange={(event) => {
+                const nextAmount = Math.max(0, Number(event.target.value || 0))
+                onChange({
+                  ...value,
+                  fieldKey: selectedFieldKey,
+                  attributePath: nextAttributePath,
+                  offsetDirection: direction,
+                  offsetAmount: nextAmount,
+                  offsetUnit: unit,
+                  offsetMinutes: direction === 'before' ? nextAmount * unitToMinutes : -nextAmount * unitToMinutes,
+                })
+              }}
+            />
+          </FormField>
+          <FormField label="Unit">
+            <select
+              value={unit}
+              onChange={(event) => {
+                const nextUnit = event.target.value
+                const nextUnitMinutes = nextUnit === 'weeks' ? 10_080 : nextUnit === 'days' ? 1_440 : nextUnit === 'hours' ? 60 : 1
+                onChange({
+                  ...value,
+                  fieldKey: selectedFieldKey,
+                  attributePath: nextAttributePath,
+                  offsetDirection: direction,
+                  offsetAmount: amount,
+                  offsetUnit: nextUnit,
+                  offsetMinutes: direction === 'before' ? amount * nextUnitMinutes : -amount * nextUnitMinutes,
+                })
+              }}
+              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+            >
+              <option value="minutes">Minutes</option>
+              <option value="hours">Hours</option>
+              <option value="days">Days</option>
+              <option value="weeks">Weeks</option>
+            </select>
+          </FormField>
+        </div>
+        <p className="text-xs text-slate-500">
+          Automation runs {direction} {amount} {unit} relative to the selected contact field.
+        </p>
+        <FormField label="Attribute path (advanced)">
+          <TextInput value={String(value.attributePath ?? '')} onChange={(event) => onChange({ ...value, attributePath: event.target.value })} />
         </FormField>
       </>
     )

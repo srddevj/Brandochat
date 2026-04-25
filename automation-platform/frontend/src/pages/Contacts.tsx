@@ -32,27 +32,16 @@ type ContactTag = {
 
 type AttributeType = 'string' | 'date' | 'datetime' | 'url' | 'integer'
 
-type AttributeInput = {
+type WorkspaceContactField = {
   id: string
-  name: string
+  key: string
+  label: string
   type: AttributeType
-  value: string
+  required: boolean
 }
-
-const ATTRIBUTE_TYPES: Array<{ value: AttributeType; label: string }> = [
-  { value: 'string', label: 'String' },
-  { value: 'date', label: 'Date' },
-  { value: 'datetime', label: 'Date & time' },
-  { value: 'url', label: 'URL' },
-  { value: 'integer', label: 'Integer' },
-]
 
 const GENDER_OPTIONS = ['', 'female', 'male', 'non_binary', 'unknown'] as const
 const PAGE_SIZE = 1000
-
-function emptyAttribute(): AttributeInput {
-  return { id: crypto.randomUUID(), name: '', type: 'string', value: '' }
-}
 
 function attributeInputType(type: AttributeType): React.HTMLInputTypeAttribute {
   if (type === 'date') return 'date'
@@ -71,16 +60,19 @@ function metadataFromForm(input: {
   lastName: string
   gender: string
   birthday: string
-  attributes: AttributeInput[]
+  fieldDefinitions: WorkspaceContactField[]
+  fieldValues: Record<string, string>
   baseMetadata?: Record<string, unknown> | null
 }): Record<string, unknown> {
   const customAttributes: Record<string, { type: AttributeType; value: string | number }> = {}
-  for (const attr of input.attributes) {
-    const key = safeAttributeKey(attr.name)
+  for (const definition of input.fieldDefinitions) {
+    const key = safeAttributeKey(definition.key)
     if (!key) continue
+    const rawValue = input.fieldValues[key] ?? ''
+    if (!rawValue && !definition.required) continue
     customAttributes[key] = {
-      type: attr.type,
-      value: attr.type === 'integer' ? Number(attr.value || 0) : attr.value,
+      type: definition.type,
+      value: definition.type === 'integer' ? Number(rawValue || 0) : rawValue,
     }
   }
 
@@ -113,23 +105,31 @@ function standardField(row: Contact, key: string): string {
   return typeof value === 'string' ? value : ''
 }
 
-function attributesFromMetadata(metadata: Contact['metadata']): AttributeInput[] {
+function attributeValuesFromMetadata(metadata: Contact['metadata']): Record<string, string> {
   const raw = metadata?.custom_attributes
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return [emptyAttribute()]
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
 
-  const rows = Object.entries(raw as Record<string, unknown>).map(([name, value]) => {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      const typed = value as { type?: AttributeType; value?: unknown }
-      return {
-        id: crypto.randomUUID(),
-        name,
-        type: typed.type ?? 'string',
-        value: typed.value == null ? '' : String(typed.value),
+  return Object.fromEntries(
+    Object.entries(raw as Record<string, unknown>).map(([name, value]) => {
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const typed = value as { value?: unknown }
+        return [name, typed.value == null ? '' : String(typed.value)]
       }
+      return [name, String(value ?? '')]
+    }),
+  )
+}
+
+function customAttributePills(metadata: Contact['metadata']): Array<{ key: string; value: string }> {
+  const raw = metadata?.custom_attributes
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return []
+  return Object.entries(raw as Record<string, unknown>).map(([name, value]) => {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const typed = value as { value?: unknown }
+      return { key: name, value: typed.value == null ? '' : String(typed.value) }
     }
-    return { id: crypto.randomUUID(), name, type: 'string' as const, value: String(value ?? '') }
+    return { key: name, value: String(value ?? '') }
   })
-  return rows.length > 0 ? rows : [emptyAttribute()]
 }
 
 export default function ContactsPage() {
@@ -139,6 +139,7 @@ export default function ContactsPage() {
   const selectedListFilter = searchParams.get('list') ?? ''
   const selectedTagFilter = searchParams.get('tag') ?? ''
   const [rows, setRows] = useState<Contact[]>([])
+  const [contactFields, setContactFields] = useState<WorkspaceContactField[]>([])
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>([])
   const [lists, setLists] = useState<ContactList[]>([])
   const [tags, setTags] = useState<ContactTag[]>([])
@@ -157,7 +158,7 @@ export default function ContactsPage() {
   const [gender, setGender] = useState('')
   const [birthday, setBirthday] = useState('')
   const [notes, setNotes] = useState('')
-  const [attributes, setAttributes] = useState<AttributeInput[]>([emptyAttribute()])
+  const [attributeValues, setAttributeValues] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editWaJid, setEditWaJid] = useState('')
@@ -168,7 +169,7 @@ export default function ContactsPage() {
   const [editGender, setEditGender] = useState('')
   const [editBirthday, setEditBirthday] = useState('')
   const [editNotes, setEditNotes] = useState('')
-  const [editAttributes, setEditAttributes] = useState<AttributeInput[]>([emptyAttribute()])
+  const [editAttributeValues, setEditAttributeValues] = useState<Record<string, string>>({})
   const [showCreate, setShowCreate] = useState(false)
   const [search, setSearch] = useState('')
 
@@ -215,6 +216,20 @@ export default function ContactsPage() {
     setTagMemberships((tagMemberRows as Array<{ tag_id: string; contact_id: string }> | null) ?? [])
   }, [workspaceId])
 
+  const loadContactFields = useCallback(async () => {
+    if (!workspaceId) return
+    const { data, error: loadErr } = await supabase
+      .from('workspace_contact_fields')
+      .select('id, key, label, type, required')
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: true })
+    if (loadErr) {
+      setError(loadErr.message)
+      return
+    }
+    setContactFields((data as WorkspaceContactField[] | null) ?? [])
+  }, [workspaceId])
+
   useEffect(() => {
     void load()
   }, [load])
@@ -223,11 +238,22 @@ export default function ContactsPage() {
     void loadListsAndTags()
   }, [loadListsAndTags])
 
+  useEffect(() => {
+    void loadContactFields()
+  }, [loadContactFields])
+
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault()
     if (!workspaceId) return
     setError(null)
-    const metadata = metadataFromForm({ firstName, lastName, gender, birthday, attributes })
+    const metadata = metadataFromForm({
+      firstName,
+      lastName,
+      gender,
+      birthday,
+      fieldDefinitions: contactFields,
+      fieldValues: attributeValues,
+    })
     const { error: insertErr } = await supabase.from('contacts').insert({
       workspace_id: workspaceId,
       wa_jid: waJid.trim(),
@@ -247,7 +273,7 @@ export default function ContactsPage() {
     setGender('')
     setBirthday('')
     setNotes('')
-    setAttributes([emptyAttribute()])
+    setAttributeValues({})
     await load()
   }
 
@@ -261,7 +287,7 @@ export default function ContactsPage() {
     setEditGender(standardField(row, 'gender'))
     setEditBirthday(standardField(row, 'birthday'))
     setEditNotes(row.notes ?? '')
-    setEditAttributes(attributesFromMetadata(row.metadata))
+    setEditAttributeValues(attributeValuesFromMetadata(row.metadata))
     setError(null)
   }
 
@@ -273,7 +299,8 @@ export default function ContactsPage() {
       lastName: editLastName,
       gender: editGender,
       birthday: editBirthday,
-      attributes: editAttributes,
+      fieldDefinitions: contactFields,
+      fieldValues: editAttributeValues,
       baseMetadata: currentRow?.metadata ?? null,
     })
     const nextDisplayName = editDisplayName.trim() || displayName(editFirstName, editLastName)
@@ -443,7 +470,12 @@ export default function ContactsPage() {
             className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none ring-emerald-500/50 focus:ring-2"
           />
         </FormField>
-        <CustomAttributesEditor attributes={attributes} onChange={setAttributes} />
+        <ConfiguredAttributesEditor
+          definitions={contactFields}
+          values={attributeValues}
+          onChange={setAttributeValues}
+          emptyLabel="No custom fields configured yet. Add them in Settings -> Contacts."
+        />
         <Button type="submit" variant="primary">
           Add contact
         </Button>
@@ -509,7 +541,13 @@ export default function ContactsPage() {
             />
           </FormField>
           <div className="mt-3">
-            <CustomAttributesEditor attributes={editAttributes} onChange={setEditAttributes} compact />
+            <ConfiguredAttributesEditor
+              definitions={contactFields}
+              values={editAttributeValues}
+              onChange={setEditAttributeValues}
+              compact
+              emptyLabel="No custom fields configured yet. Add them in Settings -> Contacts."
+            />
           </div>
         </section>
       ) : null}
@@ -693,75 +731,60 @@ export default function ContactsPage() {
   )
 }
 
-function CustomAttributesEditor({
-  attributes,
+function ConfiguredAttributesEditor({
+  definitions,
+  values,
   onChange,
   compact = false,
+  emptyLabel,
 }: {
-  attributes: AttributeInput[]
-  onChange: (attributes: AttributeInput[]) => void
+  definitions: WorkspaceContactField[]
+  values: Record<string, string>
+  onChange: (values: Record<string, string>) => void
   compact?: boolean
+  emptyLabel: string
 }) {
-  function update(id: string, patch: Partial<AttributeInput>) {
-    onChange(attributes.map((attr) => (attr.id === id ? { ...attr, ...patch } : attr)))
-  }
-
-  function remove(id: string) {
-    const next = attributes.filter((attr) => attr.id !== id)
-    onChange(next.length > 0 ? next : [emptyAttribute()])
-  }
-
   return (
     <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
       <div>
         <h2 className="text-sm font-medium text-white">Custom attributes</h2>
         {!compact ? (
           <p className="mt-1 text-xs text-slate-500">
-            These become template placeholders like <code className="text-emerald-300">{'{{contact.attr.plan}}'}</code>.
+            These are shared workspace fields configured in Settings and become placeholders like{' '}
+            <code className="text-emerald-300">{'{{contact.attr.meeting_datetime}}'}</code>.
           </p>
         ) : null}
       </div>
-      {attributes.map((attr) => (
-        <div key={attr.id} className="grid gap-2 sm:grid-cols-[1fr_150px_1fr_auto]">
-          <TextInput placeholder="Attribute name" value={attr.name} onChange={(e) => update(attr.id, { name: e.target.value })} />
-          <select
-            value={attr.type}
-            onChange={(e) => update(attr.id, { type: e.target.value as AttributeType, value: '' })}
-            className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
-          >
-            {ATTRIBUTE_TYPES.map((type) => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
-          </select>
+      {definitions.length === 0 ? <p className="text-xs text-slate-500">{emptyLabel}</p> : null}
+      {definitions.map((field) => (
+        <div key={field.id} className="grid gap-2 sm:grid-cols-[180px_1fr]">
+          <label className="text-xs text-slate-400">
+            {field.label}
+            <span className="ml-1 font-mono text-slate-500">{field.key}</span>
+            {field.required ? <span className="ml-1 text-rose-300">*</span> : null}
+          </label>
           <TextInput
-            type={attributeInputType(attr.type)}
-            step={attr.type === 'integer' ? 1 : undefined}
-            placeholder="Value"
-            value={attr.value}
-            onChange={(e) => update(attr.id, { value: e.target.value })}
+            type={attributeInputType(field.type)}
+            step={field.type === 'integer' ? 1 : undefined}
+            required={field.required}
+            placeholder={field.type}
+            value={values[field.key] ?? ''}
+            onChange={(event) => onChange({ ...values, [field.key]: event.target.value })}
           />
-          <Button type="button" variant="ghost" className="px-3" onClick={() => remove(attr.id)}>
-            Remove
-          </Button>
         </div>
       ))}
-      <Button type="button" variant="secondary" className="py-1.5 text-xs" onClick={() => onChange([...attributes, emptyAttribute()])}>
-        Add attribute
-      </Button>
     </section>
   )
 }
 
 function AttributePills({ metadata }: { metadata: Contact['metadata'] }) {
-  const attrs = attributesFromMetadata(metadata).filter((attr) => attr.name && attr.value)
+  const attrs = customAttributePills(metadata).filter((attr) => attr.key && attr.value)
   if (attrs.length === 0) return null
   return (
     <div className="mt-2 flex flex-wrap gap-2">
       {attrs.map((attr) => (
-        <span key={attr.id} className="rounded-full border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs text-slate-300">
-          {attr.name}: <span className="text-emerald-300">{attr.value}</span>
+        <span key={attr.key} className="rounded-full border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs text-slate-300">
+          {attr.key}: <span className="text-emerald-300">{attr.value}</span>
         </span>
       ))}
     </div>

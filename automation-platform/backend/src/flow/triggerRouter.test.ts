@@ -46,4 +46,19 @@ describe('triggerMatches', () => {
       ),
     ).toBe(false)
   })
+
+  it('matches contact.datetime by field key', () => {
+    const automation: AutomationRow = {
+      ...baseAutomation,
+      trigger_type: 'contact.datetime',
+      trigger_config: { fieldKey: 'meeting_datetime' },
+    }
+    const event: TriggerEvent = {
+      ...baseEvent,
+      type: 'contact.datetime',
+      payload: { fieldKey: 'meeting_datetime', attributePath: 'custom_attributes.meeting_datetime' },
+    }
+    expect(triggerMatches(automation, event)).toBe(true)
+    expect(triggerMatches(automation, { ...event, payload: { fieldKey: 'other_field', attributePath: 'custom_attributes.other_field' } })).toBe(false)
+  })
 })

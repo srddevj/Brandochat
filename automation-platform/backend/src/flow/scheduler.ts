@@ -29,11 +29,29 @@ function isDue(value: unknown, now: Date, offsetMinutes: number): boolean {
   return target <= now.getTime() && target > now.getTime() - TICK_MS * 2
 }
 
+function readOffsetMinutes(config: Record<string, unknown>): number {
+  if (typeof config.offsetMinutes === 'number' && Number.isFinite(config.offsetMinutes)) return config.offsetMinutes
+  const amount = typeof config.offsetAmount === 'number' && Number.isFinite(config.offsetAmount) ? Math.max(0, config.offsetAmount) : 0
+  const unit =
+    config.offsetUnit === 'weeks' || config.offsetUnit === 'days' || config.offsetUnit === 'hours' || config.offsetUnit === 'minutes'
+      ? config.offsetUnit
+      : 'hours'
+  const direction = config.offsetDirection === 'after' ? 'after' : 'before'
+  const factor = unit === 'weeks' ? 10_080 : unit === 'days' ? 1_440 : unit === 'hours' ? 60 : 1
+  const minutes = amount * factor
+  return direction === 'before' ? minutes : -minutes
+}
+
 async function processAutomation(admin: SupabaseClient, automation: Record<string, unknown>, now: Date) {
   const config = asObject(automation.trigger_config)
-  const attributePath = typeof config.attributePath === 'string' ? config.attributePath : ''
+  const fieldKey = typeof config.fieldKey === 'string' ? config.fieldKey.trim() : ''
+  const attributePath = typeof config.attributePath === 'string' && config.attributePath
+    ? config.attributePath
+    : fieldKey
+      ? `custom_attributes.${fieldKey}`
+      : ''
   if (!attributePath) return
-  const offsetMinutes = typeof config.offsetMinutes === 'number' ? config.offsetMinutes : 0
+  const offsetMinutes = readOffsetMinutes(config)
   const workspaceId = automation.workspace_id as string
 
   const { data: contacts, error } = await admin
@@ -63,9 +81,11 @@ async function processAutomation(admin: SupabaseClient, automation: Record<strin
       contactId: contact.id as string,
       contactJid: contact.wa_jid as string,
       payload: {
+        fieldKey,
         attributePath,
         value,
         offsetMinutes,
+        offsetDirection: offsetMinutes < 0 ? 'after' : 'before',
       },
     })
   }

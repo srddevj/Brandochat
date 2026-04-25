@@ -174,33 +174,34 @@ async function executeStateMachine(
   }
 
   while (true) {
-    const node = args.graph.nodes[current]
-    if (!node) {
-      variables = appendTrace(variables, {
-        nodeId: current,
-        nodeType: 'missing',
-        event: 'completed',
-        detail: { reason: 'Node was not found, ending run.' },
-      })
-      await patchState({ status: 'completed', current_node_id: current })
-      return
-    }
-    if (node.type === 'end') {
-      variables = appendTrace(variables, { nodeId: current, nodeType: node.type, event: 'completed' })
-      await patchState({ status: 'completed', current_node_id: current })
-      return
-    }
-    if (node.type === 'branch') {
-      variables = appendTrace(variables, {
-        nodeId: current,
-        nodeType: node.type,
-        event: 'awaiting_reply',
-        detail: { options: node.options.map((option) => ({ id: option.id, label: option.label, next: option.next })) },
-      })
-      await patchState({ status: 'awaiting_reply', current_node_id: current, variables })
-      return
-    }
-    if (node.type === 'send') {
+    try {
+      const node = args.graph.nodes[current]
+      if (!node) {
+        variables = appendTrace(variables, {
+          nodeId: current,
+          nodeType: 'missing',
+          event: 'completed',
+          detail: { reason: 'Node was not found, ending run.' },
+        })
+        await patchState({ status: 'completed', current_node_id: current })
+        return
+      }
+      if (node.type === 'end') {
+        variables = appendTrace(variables, { nodeId: current, nodeType: node.type, event: 'completed' })
+        await patchState({ status: 'completed', current_node_id: current })
+        return
+      }
+      if (node.type === 'branch') {
+        variables = appendTrace(variables, {
+          nodeId: current,
+          nodeType: node.type,
+          event: 'awaiting_reply',
+          detail: { options: node.options.map((option) => ({ id: option.id, label: option.label, next: option.next })) },
+        })
+        await patchState({ status: 'awaiting_reply', current_node_id: current, variables })
+        return
+      }
+      if (node.type === 'send') {
       const { data: tpl } = await admin
         .from('message_templates')
         .select('body')
@@ -297,8 +298,8 @@ async function executeStateMachine(
       current = next
       await patchState({ status: 'running', current_node_id: current, variables })
       continue
-    }
-    if (node.type === 'condition') {
+      }
+      if (node.type === 'condition') {
       const contactVars = await loadContactVars(admin, args.contactId)
       const value = readVariable(node.variable, toTemplateVars({ ...contactVars, ...variables }))
       const matches =
@@ -328,8 +329,8 @@ async function executeStateMachine(
       current = next
       await patchState({ status: 'running', current_node_id: current, variables })
       continue
-    }
-    if (node.type === 'updateContact') {
+      }
+      if (node.type === 'updateContact') {
       if (!args.contactId) {
         await patchState({ status: 'failed', current_node_id: current, error: 'Update contact node requires a contact' })
         return
@@ -356,8 +357,8 @@ async function executeStateMachine(
       current = node.next
       await patchState({ status: 'running', current_node_id: current, variables })
       continue
-    }
-    if (node.type === 'assignConversation') {
+      }
+      if (node.type === 'assignConversation') {
       if (args.conversationId) {
         await admin
           .from('conversations')
@@ -377,8 +378,8 @@ async function executeStateMachine(
       current = node.next
       await patchState({ status: 'running', current_node_id: current, variables })
       continue
-    }
-    if (node.type === 'delayUntil') {
+      }
+      if (node.type === 'delayUntil') {
       variables[`delay.${current}.until`] = applyTemplateVars(node.until, toTemplateVars(variables))
       variables = appendTrace(variables, {
         nodeId: current,
@@ -388,8 +389,8 @@ async function executeStateMachine(
       })
       await patchState({ status: 'paused', current_node_id: current, variables })
       return
-    }
-    if (node.type === 'webhookResponse') {
+      }
+      if (node.type === 'webhookResponse') {
       variables.webhookResponse = applyTemplateVars(node.body ?? '', toTemplateVars(variables))
       variables = appendTrace(variables, {
         nodeId: current,
@@ -404,8 +405,8 @@ async function executeStateMachine(
       current = node.next
       await patchState({ status: 'running', current_node_id: current, variables })
       continue
-    }
-    if (node.type === 'aiSkill') {
+      }
+      if (node.type === 'aiSkill') {
       const output = await runAiSkill(node.instructions, toTemplateVars(variables))
       const key = node.outputVariable || `skill.${current}.output`
       variables[key] = output
@@ -439,7 +440,18 @@ async function executeStateMachine(
       current = node.next
       await patchState({ status: 'running', current_node_id: current, variables })
       continue
+      }
+      return
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Automation node execution failed'
+      variables = appendTrace(variables, {
+        nodeId: current,
+        nodeType: 'runtime',
+        event: 'failed',
+        detail: { error: message },
+      })
+      await patchState({ status: 'failed', current_node_id: current, variables, error: message })
+      return
     }
-    return
   }
 }
