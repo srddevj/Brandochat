@@ -33,13 +33,6 @@ export function AppShell() {
   const location = useLocation()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const isBuilder = location.pathname.includes('/automations/') && location.pathname.endsWith('/builder')
-  const mobileTabs = [
-    { to: `${base}/chats`, label: 'Chats', icon: '💬' },
-    { to: `${base}/contacts`, label: 'Contacts', icon: '👥' },
-    { to: `${base}/templates`, label: 'Templates', icon: '🧩' },
-    { to: `${base}/automations`, label: 'Flows', icon: '⚡' },
-    { to: `${base}/whatsapp`, label: 'WhatsApp', icon: '🟢' },
-  ]
 
   useEffect(() => {
     void supabase
@@ -193,6 +186,13 @@ export function WorkspaceShell() {
     ],
     [base, stats.connected],
   )
+  const mobileTabs = [
+    { to: `${base}/chats`, label: 'Chats', icon: '💬' },
+    { to: `${base}/contacts`, label: 'Contacts', icon: '👥' },
+    { to: `${base}/templates`, label: 'Templates', icon: '🧩' },
+    { to: `${base}/automations`, label: 'Flows', icon: '⚡' },
+    { to: `${base}/whatsapp`, label: 'WhatsApp', icon: '🟢' },
+  ]
   const isBuilder = location.pathname.includes('/automations/') && location.pathname.endsWith('/builder')
 
   if (isBuilder) {
