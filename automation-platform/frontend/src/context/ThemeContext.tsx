@@ -7,7 +7,7 @@ type ThemeContextValue = {
   setTheme: (theme: ThemeMode) => void
 }
 
-const STORAGE_KEY = 'BrandoChat-theme'
+const STORAGE_KEY = 'brandochat-theme'
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 function detectInitialTheme(): ThemeMode {

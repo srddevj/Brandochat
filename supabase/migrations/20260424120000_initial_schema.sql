@@ -1,4 +1,4 @@
--- BrandoChat-style automation platform — core schema, updated_at, RLS
+-- BrandoChat automation platform — core schema, updated_at, RLS
 
 create extension if not exists "pgcrypto";
 
