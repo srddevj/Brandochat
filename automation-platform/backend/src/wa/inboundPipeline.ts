@@ -94,11 +94,12 @@ export async function handleInboundText(args: {
   phoneE164?: string | null
   participantJid?: string
   participantAltJid?: string
+  pushName?: string
   text: string
   waMessageId: string | undefined
   raw: unknown
 }): Promise<void> {
-  const { admin, workspaceId, instanceId, sock, remoteJid, alternateJid, phoneE164, participantJid, participantAltJid, text, waMessageId, raw } = args
+  const { admin, workspaceId, instanceId, sock, remoteJid, alternateJid, phoneE164, participantJid, participantAltJid, pushName, text, waMessageId, raw } = args
   const receivedAt = new Date().toISOString()
   const isGroup = remoteJid.endsWith('@g.us')
   const groupSubject = isGroup ? await resolveGroupSubject(sock, remoteJid) : null
@@ -110,6 +111,7 @@ export async function handleInboundText(args: {
       : remoteJid
   const lidJid = remoteJid.endsWith('@lid') ? remoteJid : alternateJid?.endsWith('@lid') ? alternateJid : undefined
   const existingMetadata = metadataFrom(existingContact)
+  const sanitizedPushName = typeof pushName === 'string' && pushName.trim() ? pushName.trim() : null
 
   const nextMetadata = {
     ...existingMetadata,
@@ -131,6 +133,7 @@ export async function handleInboundText(args: {
     phone_e164: isGroup ? null : phoneE164 ?? (existingContact?.phone_e164 as string | null | undefined) ?? null,
     display_name:
       (isGroup ? groupSubject : null) ??
+      sanitizedPushName ??
       (existingContact?.display_name as string | null | undefined) ??
       phoneE164 ??
       canonicalJid.split('@')[0] ??

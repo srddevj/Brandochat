@@ -779,6 +779,7 @@ export async function ensureWorkspaceSocket(workspaceId: string, instanceId: str
           phoneE164: address.phoneE164,
           participantJid: address.participantJid,
           participantAltJid: address.participantAltJid,
+          pushName: typeof msg.pushName === 'string' ? msg.pushName : undefined,
           text,
           waMessageId: msg.key.id ?? undefined,
           raw: msg,
