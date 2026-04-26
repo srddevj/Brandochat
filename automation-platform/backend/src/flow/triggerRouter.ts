@@ -255,9 +255,16 @@ export async function routeTrigger(
   event: TriggerEvent,
   opts: { sock?: WASocket | null } = {},
 ): Promise<void> {
+  const preflightStartedAt = Date.now()
+  // #region agent log
+  fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H7',location:'triggerRouter.ts:259',message:'routeTrigger preflight start',data:{workspaceId:event.workspaceId,triggerType:event.type,contactId:event.contactId ?? null},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
   // Pre-flight: try to establish a workspace WhatsApp socket before starting runs.
   // This helps scheduled/webhook triggers execute send nodes without requiring manual refresh.
-  await ensureWorkspaceWhatsAppConnected(event.workspaceId).catch(() => false)
+  const preflightConnected = await ensureWorkspaceWhatsAppConnected(event.workspaceId).catch(() => false)
+  // #region agent log
+  fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H7',location:'triggerRouter.ts:263',message:'routeTrigger preflight end',data:{workspaceId:event.workspaceId,triggerType:event.type,connected:preflightConnected,durationMs:Date.now()-preflightStartedAt},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
   const workspaceSock = opts.sock ?? getConnectedWorkspaceSocket(event.workspaceId)
   // #region agent log
   fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H2',location:'triggerRouter.ts:263',message:'routeTrigger preflight socket snapshot',data:{workspaceId:event.workspaceId,triggerType:event.type,contactId:event.contactId ?? null,contactJid:event.contactJid ?? null,hasSocket:Boolean(workspaceSock)},timestamp:Date.now()})}).catch(()=>{});

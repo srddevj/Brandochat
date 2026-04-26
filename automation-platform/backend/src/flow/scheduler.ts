@@ -100,10 +100,24 @@ async function processAutomation(admin: SupabaseClient, automation: Record<strin
       const payload = (lastRun?.trigger_payload ?? {}) as Record<string, unknown>
       const sameValue = String(payload.value ?? '') === String(value)
       const isFailed = String(lastRun?.status ?? '') === 'failed'
+      const { data: sameValueRun } = await admin
+        .from('automation_runs')
+        .select('id, status, updated_at, trigger_payload')
+        .eq('automation_id', String(automation.id))
+        .eq('contact_id', String(contact.id))
+        .eq('trigger_type', 'contact.datetime')
+        .order('updated_at', { ascending: false })
+        .limit(25)
+      const matchingRun = (sameValueRun ?? []).find((row) => {
+        const rowPayload = (row.trigger_payload ?? {}) as Record<string, unknown>
+        return String(rowPayload.value ?? '') === String(value)
+      })
+      const isOrphanLock = !matchingRun
       // #region agent log
-      fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H6',location:'scheduler.ts:96',message:'duplicate lock recovery check',data:{automationId:String(automation.id ?? ''),contactId:String(contact.id ?? ''),lockKey,lastRunId:String(lastRun?.id ?? ''),lastRunStatus:String(lastRun?.status ?? ''),sameValue,isFailed},timestamp:Date.now()})}).catch(()=>{});
+      fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H6',location:'scheduler.ts:96',message:'duplicate lock recovery check',data:{automationId:String(automation.id ?? ''),contactId:String(contact.id ?? ''),lockKey,lastRunId:String(lastRun?.id ?? ''),lastRunStatus:String(lastRun?.status ?? ''),sameValue,isFailed,matchingRunId:String(matchingRun?.id ?? ''),matchingRunStatus:String(matchingRun?.status ?? ''),isOrphanLock},timestamp:Date.now()})}).catch(()=>{});
       // #endregion
-      if (!(sameValue && isFailed)) continue
+      const canRecoverFromFailedMatchingRun = sameValue && isFailed
+      if (!(canRecoverFromFailedMatchingRun || isOrphanLock)) continue
       await admin
         .from('scheduled_trigger_locks')
         .delete()
@@ -125,19 +139,40 @@ async function processAutomation(admin: SupabaseClient, automation: Record<strin
       // lock insert succeeded, proceed normally
     }
 
-    await routeTrigger(admin, {
-      workspaceId,
-      type: 'contact.datetime',
-      contactId: contact.id as string,
-      contactJid: contact.wa_jid as string,
-      payload: {
-        fieldKey,
-        attributePath,
-        value,
-        offsetMinutes,
-        offsetDirection: offsetMinutes < 0 ? 'after' : 'before',
-      },
-    })
+    const routeStartedAt = Date.now()
+    // #region agent log
+    fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H7',location:'scheduler.ts:142',message:'routeTrigger dispatch start',data:{automationId:String(automation.id ?? ''),contactId:String(contact.id ?? ''),lockKey},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    try {
+      await routeTrigger(admin, {
+        workspaceId,
+        type: 'contact.datetime',
+        contactId: contact.id as string,
+        contactJid: contact.wa_jid as string,
+        payload: {
+          fieldKey,
+          attributePath,
+          value,
+          offsetMinutes,
+          offsetDirection: offsetMinutes < 0 ? 'after' : 'before',
+        },
+      })
+      // #region agent log
+      fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H7',location:'scheduler.ts:160',message:'routeTrigger dispatch end',data:{automationId:String(automation.id ?? ''),contactId:String(contact.id ?? ''),lockKey,durationMs:Date.now()-routeStartedAt},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+    } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H7',location:'scheduler.ts:164',message:'routeTrigger dispatch failed',data:{automationId:String(automation.id ?? ''),contactId:String(contact.id ?? ''),lockKey,error:error instanceof Error ? error.message : String(error)},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+      await admin
+        .from('scheduled_trigger_locks')
+        .delete()
+        .eq('workspace_id', workspaceId)
+        .eq('automation_id', String(automation.id))
+        .eq('contact_id', String(contact.id))
+        .eq('lock_key', lockKey)
+      throw error
+    }
   }
 }
 
