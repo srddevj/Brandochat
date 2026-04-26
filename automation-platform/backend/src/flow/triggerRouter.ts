@@ -270,6 +270,13 @@ export async function routeTrigger(
   fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H2',location:'triggerRouter.ts:263',message:'routeTrigger preflight socket snapshot',data:{workspaceId:event.workspaceId,triggerType:event.type,contactId:event.contactId ?? null,contactJid:event.contactJid ?? null,hasSocket:Boolean(workspaceSock)},timestamp:Date.now()})}).catch(()=>{});
   // #endregion
 
+  if (event.type === 'contact.datetime' && !workspaceSock) {
+    // #region agent log
+    fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'post-fix',hypothesisId:'H8',location:'triggerRouter.ts:272',message:'contact.datetime deferred due to unavailable workspace socket',data:{workspaceId:event.workspaceId,triggerType:event.type,preflightConnected,hasSocket:Boolean(workspaceSock),contactId:event.contactId ?? null},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    throw new Error('CONTACT_DATETIME_DEFERRED_NO_SOCKET')
+  }
+
   const { data, error } = await admin
     .from('automations')
     .select('id, workspace_id, name, is_active, entry_node_id, graph, trigger_type, trigger_config')

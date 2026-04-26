@@ -161,8 +161,9 @@ async function processAutomation(admin: SupabaseClient, automation: Record<strin
       fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H7',location:'scheduler.ts:160',message:'routeTrigger dispatch end',data:{automationId:String(automation.id ?? ''),contactId:String(contact.id ?? ''),lockKey,durationMs:Date.now()-routeStartedAt},timestamp:Date.now()})}).catch(()=>{});
       // #endregion
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
       // #region agent log
-      fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H7',location:'scheduler.ts:164',message:'routeTrigger dispatch failed',data:{automationId:String(automation.id ?? ''),contactId:String(contact.id ?? ''),lockKey,error:error instanceof Error ? error.message : String(error)},timestamp:Date.now()})}).catch(()=>{});
+      fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'post-fix',hypothesisId:'H8',location:'scheduler.ts:164',message:'routeTrigger dispatch failed',data:{automationId:String(automation.id ?? ''),contactId:String(contact.id ?? ''),lockKey,error:message},timestamp:Date.now()})}).catch(()=>{});
       // #endregion
       await admin
         .from('scheduled_trigger_locks')
@@ -171,6 +172,7 @@ async function processAutomation(admin: SupabaseClient, automation: Record<strin
         .eq('automation_id', String(automation.id))
         .eq('contact_id', String(contact.id))
         .eq('lock_key', lockKey)
+      if (message === 'CONTACT_DATETIME_DEFERRED_NO_SOCKET') continue
       throw error
     }
   }
