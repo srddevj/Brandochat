@@ -24,6 +24,7 @@ type TraceEntry = {
 const SEND_RETRY_ATTEMPTS = 3
 const SEND_RETRY_DELAY_MS = 10_000
 const SEND_ATTEMPT_TIMEOUT_MS = 35_000
+const SEND_TRANSPORT_ATTEMPT_TIMEOUT_MS = 140_000
 
 function toTemplateVars(vars: Record<string, unknown>): Record<string, string> {
   return Object.fromEntries(Object.entries(vars).map(([key, value]) => [key, value == null ? '' : String(value)]))
@@ -288,7 +289,7 @@ async function executeStateMachine(
           try {
             await withTimeout(
               ensureWorkspaceWhatsAppConnected(args.workspaceId).catch(() => false),
-              SEND_ATTEMPT_TIMEOUT_MS,
+              SEND_TRANSPORT_ATTEMPT_TIMEOUT_MS,
               'WhatsApp reconnect',
             )
             const sent = await withTimeout(
@@ -297,7 +298,7 @@ async function executeStateMachine(
                 jid: recipientJid,
                 text: body,
               }),
-              SEND_ATTEMPT_TIMEOUT_MS,
+              SEND_TRANSPORT_ATTEMPT_TIMEOUT_MS,
               'WhatsApp send',
             )
             waMessageId = sent.waMessageId
