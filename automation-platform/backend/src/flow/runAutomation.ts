@@ -196,6 +196,29 @@ async function executeStateMachine(
     await admin.from(args.table).update(update).eq('id', args.stateId)
   }
 
+  const releaseDatetimeRetryLock = async (): Promise<void> => {
+    if (args.table !== 'automation_runs') return
+    const triggerType = String((variables as Record<string, unknown>).triggerType ?? '')
+    if (triggerType !== 'contact.datetime') return
+    const attributePath = String((variables as Record<string, unknown>).attributePath ?? '')
+    const value = (variables as Record<string, unknown>).value
+    const offsetMinutesRaw = (variables as Record<string, unknown>).offsetMinutes
+    const offsetMinutes = typeof offsetMinutesRaw === 'number' && Number.isFinite(offsetMinutesRaw) ? offsetMinutesRaw : 0
+    if (!attributePath || typeof value !== 'string' || !value) return
+    const valueTs = Date.parse(value)
+    if (Number.isNaN(valueTs)) return
+    const target = valueTs - offsetMinutes * 60_000
+    const bucket = new Date(target).toISOString().slice(0, 16)
+    const lockKey = `${attributePath}:${String(value)}:${bucket}`
+    await admin
+      .from('scheduled_trigger_locks')
+      .delete()
+      .eq('workspace_id', args.workspaceId)
+      .eq('automation_id', args.automationId)
+      .eq('contact_id', args.contactId ?? null)
+      .eq('lock_key', lockKey)
+  }
+
   while (true) {
     try {
       const node = args.graph.nodes[current]
@@ -280,6 +303,9 @@ async function executeStateMachine(
       }
 
       let waMessageId: string | null = null
+      // #region agent log
+      fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H3',location:'runAutomation.ts:286',message:'send node execution context',data:{workspaceId:args.workspaceId,automationId:args.automationId,triggerType:String((variables as Record<string, unknown>).triggerType ?? ''),hasSock:Boolean(args.sock),recipientJid:recipientJid},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       if (args.sock) {
         const sent = await withTimeout(args.sock.sendMessage(recipientJid, { text: body }), SEND_ATTEMPT_TIMEOUT_MS, 'WhatsApp send')
         waMessageId = sent?.key.id ?? null
@@ -512,6 +538,12 @@ async function executeStateMachine(
       return
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Automation node execution failed'
+      // #region agent log
+      fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H4',location:'runAutomation.ts:506',message:'automation execution failed',data:{workspaceId:args.workspaceId,automationId:args.automationId,currentNode:current,triggerType:String((variables as Record<string, unknown>).triggerType ?? ''),error:message},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+      if (message.includes('WhatsApp is not connected') || message.includes('timed out')) {
+        await releaseDatetimeRetryLock().catch(() => undefined)
+      }
       variables = appendTrace(variables, {
         nodeId: current,
         nodeType: 'runtime',

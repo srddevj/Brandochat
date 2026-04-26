@@ -3,6 +3,7 @@ import { getServiceRoleClient } from '../lib/supabase-clients.js'
 import { routeTrigger } from './triggerRouter.js'
 
 const TICK_MS = 60_000
+const DATETIME_RETRY_WINDOW_MS = 20 * 60_000
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
@@ -27,7 +28,7 @@ function dueBucket(value: unknown, now: Date, offsetMinutes: number): string | n
   if (Number.isNaN(timestamp)) return null
   const target = timestamp - offsetMinutes * 60_000
   const nowMs = now.getTime()
-  if (!(target <= nowMs && target > nowMs - TICK_MS * 2)) return null
+  if (!(target <= nowMs && target > nowMs - DATETIME_RETRY_WINDOW_MS)) return null
   // Stable minute bucket based on scheduled target time, not "now".
   // Prevents duplicate runs every scheduler tick for the same due datetime.
   return new Date(target).toISOString().slice(0, 16)
@@ -72,13 +73,21 @@ async function processAutomation(admin: SupabaseClient, automation: Record<strin
     if (!bucket) continue
 
     const lockKey = `${attributePath}:${String(value)}:${bucket}`
+    // #region agent log
+    fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H1',location:'scheduler.ts:73',message:'contact.datetime candidate due',data:{automationId:String(automation.id ?? ''),workspaceId,contactId:String(contact.id ?? ''),attributePath,offsetMinutes,value:String(value),bucket,lockKey},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     const { error: lockError } = await admin.from('scheduled_trigger_locks').insert({
       workspace_id: workspaceId,
       automation_id: automation.id,
       contact_id: contact.id,
       lock_key: lockKey,
     })
-    if (lockError) continue
+    if (lockError) {
+      // #region agent log
+      fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H1',location:'scheduler.ts:82',message:'contact.datetime lock insert skipped',data:{automationId:String(automation.id ?? ''),contactId:String(contact.id ?? ''),lockKey,error:lockError.message},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+      continue
+    }
 
     await routeTrigger(admin, {
       workspaceId,

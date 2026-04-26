@@ -363,6 +363,9 @@ export async function sendWorkspaceTextMessage(args: {
   }
 
   if (!session?.sock) {
+    // #region agent log
+    fetch('http://127.0.0.1:7271/ingest/f8faaa4f-224d-477d-aa48-fe5fcffd5b08',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'fc3e1c'},body:JSON.stringify({sessionId:'fc3e1c',runId:'pre-fix',hypothesisId:'H5',location:'baileysSession.ts:360',message:'sendWorkspaceTextMessage unresolved workspace session',data:{workspaceId:args.workspaceId,instanceId:args.instanceId ?? null,jid:args.jid,knownSessions:Array.from(sessions.values()).filter((entry)=>entry.workspaceId===args.workspaceId).map((entry)=>({instanceId:entry.instanceId,status:entry.pairing_status,hasSock:Boolean(entry.sock),starting:Boolean(entry.starting)}))},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     throw new Error('WhatsApp is not connected for this workspace. Click Start / refresh, scan the QR if shown, then send again.')
   }
 
