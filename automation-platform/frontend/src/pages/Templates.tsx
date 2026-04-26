@@ -44,6 +44,8 @@ export default function Templates() {
   const [rows, setRows] = useState<Row[]>([])
   const [name, setName] = useState('')
   const [body, setBody] = useState('')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
   const [placeholders, setPlaceholders] = useState<PlaceholderOption[]>(BASE_PLACEHOLDERS)
   const [error, setError] = useState<string | null>(null)
   const bodyRef = useRef<HTMLTextAreaElement | null>(null)
@@ -56,7 +58,11 @@ export default function Templates() {
       .eq('workspace_id', workspaceId)
       .order('name')
     if (loadErr) setError(loadErr.message)
-    else setRows((data as Row[]) ?? [])
+    else {
+      const nextRows = (data as Row[]) ?? []
+      setRows(nextRows)
+      setSelectedId((current) => current ?? nextRows[0]?.id ?? null)
+    }
   }
 
   useEffect(() => {
@@ -117,32 +123,50 @@ export default function Templates() {
     }
     setName('')
     setBody('')
+    setShowCreate(false)
     await load()
   }
 
+  const selectedTemplate = rows.find((row) => row.id === selectedId) ?? null
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-white">Message templates</h1>
-      <p className="text-sm text-slate-400">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Message templates</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            Select an existing template to preview it, or create a new template from scratch.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowCreate((value) => !value)}
+          className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-500"
+        >
+          {showCreate ? 'Close create form' : 'Create new template'}
+        </button>
+      </div>
+      <p className="text-sm text-slate-600 dark:text-slate-400">
         Templates are plain WhatsApp text messages, not Meta button templates. Add numbered choices in the
         message body when needed, then use automation skills/branches to interpret replies. Placeholders:
-        flow variables <code className="text-emerald-300">{'{{name}}'}</code> from automation
+        flow variables <code className="text-cyan-600 dark:text-cyan-300">{'{{name}}'}</code> from automation
         state, plus contact fields{' '}
-        <code className="text-emerald-300">{'{{contact.display_name}}'}</code>,{' '}
-        <code className="text-emerald-300">{'{{contact.phone_e164}}'}</code>,{' '}
-        <code className="text-emerald-300">{'{{contact.wa_jid}}'}</code>,{' '}
-        <code className="text-emerald-300">{'{{contact.notes}}'}</code>, and{' '}
-        <code className="text-emerald-300">{'{{contact.attr.plan}}'}</code> for each key in contact metadata
-        JSON, plus Calendly fields like <code className="text-emerald-300">{'{{meetingJoinUrl}}'}</code> and Q&A keys like{' '}
-        <code className="text-emerald-300">{'{{qa.handynummer}}'}</code>.
+        <code className="text-cyan-600 dark:text-cyan-300">{'{{contact.display_name}}'}</code>,{' '}
+        <code className="text-cyan-600 dark:text-cyan-300">{'{{contact.phone_e164}}'}</code>,{' '}
+        <code className="text-cyan-600 dark:text-cyan-300">{'{{contact.wa_jid}}'}</code>,{' '}
+        <code className="text-cyan-600 dark:text-cyan-300">{'{{contact.notes}}'}</code>, and{' '}
+        <code className="text-cyan-600 dark:text-cyan-300">{'{{contact.attr.plan}}'}</code> for each key in contact metadata
+        JSON, plus Calendly fields like <code className="text-cyan-600 dark:text-cyan-300">{'{{meetingJoinUrl}}'}</code> and Q&A keys like{' '}
+        <code className="text-cyan-600 dark:text-cyan-300">{'{{qa.handynummer}}'}</code>.
       </p>
-      <form onSubmit={add} className="space-y-3 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+      {showCreate ? (
+      <form onSubmit={add} className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/40">
         <input
           required
           placeholder="Template name (unique in workspace)"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         />
         <textarea
           ref={bodyRef}
@@ -151,11 +175,11 @@ export default function Templates() {
           value={body}
           onChange={(e) => setBody(e.target.value)}
           rows={4}
-          className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
         />
-        <div className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+        <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/40">
           <div>
-            <h2 className="text-sm font-medium text-white">Insert placeholders</h2>
+            <h2 className="text-sm font-medium text-slate-900 dark:text-white">Insert placeholders</h2>
             <p className="mt-1 text-xs text-slate-500">Click a variable to add it to the message body at your cursor.</p>
           </div>
           {Array.from(new Set(placeholders.map((item) => item.group))).map((group) => (
@@ -167,7 +191,7 @@ export default function Templates() {
                     key={item.value}
                     type="button"
                     onClick={() => insertPlaceholder(item.value)}
-                    className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-300 hover:border-emerald-500/60 hover:text-emerald-300"
+                    className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:border-cyan-500/60 hover:text-cyan-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-cyan-300"
                     title={`Insert {{${item.value}}}`}
                   >
                     {item.label}
@@ -178,18 +202,46 @@ export default function Templates() {
           ))}
         </div>
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
-        <button type="submit" className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white">
+        <button type="submit" className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-500">
           Save template
         </button>
       </form>
-      <ul className="space-y-3">
-        {rows.map((r) => (
-          <li key={r.id} className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-            <h2 className="font-medium text-emerald-300">{r.name}</h2>
-            <pre className="mt-2 whitespace-pre-wrap text-sm text-slate-300">{r.body}</pre>
-          </li>
-        ))}
-      </ul>
+      ) : null}
+
+      <section className="grid gap-4 lg:grid-cols-[320px_1fr]">
+        <aside className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/50">
+          <h2 className="mb-2 text-sm font-semibold text-slate-900 dark:text-white">Templates list</h2>
+          <div className="space-y-2">
+            {rows.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => setSelectedId(r.id)}
+                className={`w-full rounded-lg border px-3 py-2 text-left ${
+                  selectedId === r.id
+                    ? 'border-cyan-500/60 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
+                }`}
+              >
+                <p className="truncate text-sm font-medium">{r.name}</p>
+              </button>
+            ))}
+            {rows.length === 0 ? <p className="text-sm text-slate-500">No templates yet.</p> : null}
+          </div>
+        </aside>
+        <article className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/50">
+          {!selectedTemplate ? (
+            <p className="text-sm text-slate-500">Select a template from the list to preview.</p>
+          ) : (
+            <>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{selectedTemplate.name}</h3>
+              <pre className="mt-3 whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-300">
+                {selectedTemplate.body}
+              </pre>
+            </>
+          )}
+        </article>
+      </section>
     </div>
   )
 }

@@ -1,4 +1,6 @@
 import { Router } from 'express'
+import { downloadMediaMessage, type WAMessage } from '@whiskeysockets/baileys'
+import pino from 'pino'
 import { parseGraph } from '../flow/graphRuntime.js'
 import { executeAutomationRun } from '../flow/runAutomation.js'
 import type { AutomationRunRow } from '../flow/types.js'
@@ -10,6 +12,8 @@ import { resolveConversation } from '../wa/conversations.js'
 import {
   disconnectWorkspace,
   ensureWorkspaceSocket,
+  ensureWorkspaceWhatsAppConnected,
+  getConnectedWorkspaceSocket,
   getQr,
   getSession,
   requestChatHistorySync,
@@ -67,6 +71,7 @@ async function getOrCreateDefaultInstance(workspaceId: string) {
 }
 
 export function createWaRouter(): Router {
+  const mediaLogger = pino({ level: 'error' })
   const router = Router({ mergeParams: true })
   router.use(requireWorkspaceMember)
 
@@ -232,6 +237,61 @@ export function createWaRouter(): Router {
       }
 
       res.json({ ok: true, ...result })
+    }),
+  )
+
+  router.get(
+    '/media/:messageEventId',
+    asyncHandler(async (req, res) => {
+      const workspaceId = readWorkspaceId(req)
+      const messageEventId = String(req.params.messageEventId)
+      const admin = getServiceRoleClient()
+      const { data: eventRow, error } = await admin
+        .from('message_events')
+        .select('raw')
+        .eq('workspace_id', workspaceId)
+        .eq('id', messageEventId)
+        .maybeSingle()
+      if (error || !eventRow?.raw) {
+        res.status(404).json({ error: 'Message not found' })
+        return
+      }
+
+      await ensureWorkspaceWhatsAppConnected(workspaceId).catch(() => false)
+      const sock = getConnectedWorkspaceSocket(workspaceId)
+      if (!sock) {
+        res.status(409).json({ error: 'WhatsApp is not connected for media fetch' })
+        return
+      }
+
+      const raw = eventRow.raw as Record<string, unknown>
+      const message = (raw as { message?: unknown }).message
+      if (!message || typeof message !== 'object') {
+        res.status(400).json({ error: 'Message has no media payload' })
+        return
+      }
+
+      const mediaMessage = raw as unknown as WAMessage
+      const mediaBuffer = await downloadMediaMessage(
+        mediaMessage,
+        'buffer',
+        {},
+        {
+          logger: mediaLogger,
+          reuploadRequest: sock.updateMediaMessage,
+        },
+      ).catch(() => null)
+      if (!mediaBuffer || !(mediaBuffer instanceof Buffer)) {
+        res.status(404).json({ error: 'Media payload unavailable' })
+        return
+      }
+
+      const image = (message as Record<string, unknown>).imageMessage as { mimetype?: string } | undefined
+      const video = (message as Record<string, unknown>).videoMessage as { mimetype?: string } | undefined
+      const mimeType = image?.mimetype || video?.mimetype || 'application/octet-stream'
+      res.setHeader('Content-Type', mimeType)
+      res.setHeader('Cache-Control', 'private, max-age=60')
+      res.send(mediaBuffer)
     }),
   )
 

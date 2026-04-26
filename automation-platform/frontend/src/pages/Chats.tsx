@@ -26,6 +26,7 @@ type MessageEvent = {
   created_at: string
   raw: Record<string, unknown> | null
 }
+type MessageMedia = { kind: 'image' | 'video'; caption: string | null; url: string | null }
 
 type ConversationRow = {
   id: string
@@ -114,6 +115,31 @@ function senderFromRaw(message: MessageEvent): string {
   if (!key || typeof key !== 'object' || Array.isArray(key)) return ''
   const participant = (key as Record<string, unknown>).participantAlt ?? (key as Record<string, unknown>).participant
   return typeof participant === 'string' ? participant : ''
+}
+
+function unwrapRawMessage(message: unknown): Record<string, unknown> | null {
+  if (!message || typeof message !== 'object' || Array.isArray(message)) return null
+  const m = message as Record<string, unknown>
+  const wrappers = ['ephemeralMessage', 'viewOnceMessage', 'viewOnceMessageV2', 'documentWithCaptionMessage'] as const
+  for (const key of wrappers) {
+    const wrapped = m[key] as { message?: unknown } | undefined
+    if (wrapped?.message) return unwrapRawMessage(wrapped.message)
+  }
+  return m
+}
+
+function mediaFromRaw(message: MessageEvent): MessageMedia | null {
+  const content = unwrapRawMessage(message.raw?.message)
+  if (!content) return null
+  const image = content.imageMessage as { caption?: string; url?: string } | undefined
+  if (image) return { kind: 'image', caption: image.caption ?? null, url: image.url ?? null }
+  const video = content.videoMessage as { caption?: string; url?: string } | undefined
+  if (video) return { kind: 'video', caption: video.caption ?? null, url: video.url ?? null }
+  return null
+}
+
+function mediaProxyUrl(workspaceId: string, messageEventId: string): string {
+  return `/api/wa/${workspaceId}/media/${messageEventId}`
 }
 
 function ContactIdWithHoverJid({ contact, className = '' }: { contact: Contact; className?: string }) {
@@ -567,10 +593,10 @@ export default function ChatsPage() {
       />
       <FormError message={error} />
 
-      <div className="grid min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-800 bg-slate-900/40 lg:grid-cols-[280px_1fr]">
-        <aside className={`flex min-h-0 flex-col border-b border-slate-800 lg:border-b-0 lg:border-r ${mobileConversationOpen ? 'hidden lg:flex' : 'flex'}`}>
-          <div className="shrink-0 border-b border-slate-800 px-4 py-3">
-            <h2 className="text-sm font-medium text-white">Conversations</h2>
+      <div className="grid min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white lg:grid-cols-[280px_1fr] dark:border-slate-800 dark:bg-slate-900/40">
+        <aside className={`flex min-h-0 flex-col border-b border-slate-200 dark:border-slate-800 lg:border-b-0 lg:border-r ${mobileConversationOpen ? 'hidden lg:flex' : 'flex'}`}>
+          <div className="shrink-0 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+            <h2 className="text-sm font-medium text-slate-900 dark:text-white">Conversations</h2>
             <p className="text-xs text-slate-500">{visibleContacts.length} visible chats</p>
             <TextInput
               value={conversationSearch}
@@ -596,10 +622,10 @@ export default function ChatsPage() {
                     setSelectedContactId(contact.id)
                     setMobileConversationOpen(true)
                   }}
-                  className={`block w-full border-b border-slate-800 px-4 py-3 text-left transition ${
+                  className={`block w-full border-b border-slate-200 px-4 py-3 text-left transition dark:border-slate-800 ${
                     selectedContactId === contact.id
-                      ? 'bg-emerald-500/10 text-white'
-                      : 'text-slate-300 hover:bg-slate-800/70'
+                      ? 'bg-cyan-500/10 text-slate-900 dark:text-white'
+                      : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/70'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -612,10 +638,10 @@ export default function ChatsPage() {
                     ) : null}
                   </div>
                   {latestMessageBody(contact) ? (
-                    <p className="truncate text-xs text-slate-400">{latestMessageBody(contact)}</p>
+                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">{latestMessageBody(contact)}</p>
                   ) : null}
                   {messageMatches.some((message) => message.contact_id === contact.id || message.wa_chat_jid === contact.wa_jid) ? (
-                    <p className="truncate text-xs text-emerald-300">Matched message text</p>
+                    <p className="truncate text-xs text-cyan-300">Matched message text</p>
                   ) : null}
                   {labelsForContact(contact.id).length > 0 ? (
                     <div className="mt-2 flex flex-wrap gap-1">
@@ -627,10 +653,10 @@ export default function ChatsPage() {
                     </div>
                   ) : null}
                   {assignedTo(contact) ? (
-                    <div className="mt-2 inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-200">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                    <div className="mt-2 inline-flex max-w-full items-center gap-2 rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1 text-xs text-cyan-200">
+                      <span className="h-2 w-2 rounded-full bg-cyan-400" />
                       <span className="truncate">
-                        Assigned: <span className="font-medium text-emerald-100">{assigneeLabel(contact)}</span>
+                        Assigned: <span className="font-medium text-cyan-100">{assigneeLabel(contact)}</span>
                       </span>
                     </div>
                   ) : null}
@@ -641,18 +667,18 @@ export default function ChatsPage() {
         </aside>
 
         <section className={`flex min-h-0 min-w-0 flex-col ${mobileConversationOpen ? 'flex' : 'hidden lg:flex'}`}>
-          <header className="shrink-0 border-b border-slate-800 px-4 py-3">
+          <header className="shrink-0 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
             {selectedContact ? (
               <>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    className="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300 lg:hidden"
+                    className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300 lg:hidden"
                     onClick={() => setMobileConversationOpen(false)}
                   >
                     Back
                   </button>
-                  <h2 className="font-medium text-white">{contactLabel(selectedContact)}</h2>
+                  <h2 className="font-medium text-slate-900 dark:text-white">{contactLabel(selectedContact)}</h2>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <ContactIdWithHoverJid contact={selectedContact} className="min-w-[240px]" />
@@ -660,13 +686,13 @@ export default function ChatsPage() {
                     <span className="rounded-full border border-sky-500/40 px-2 py-0.5 text-xs text-sky-300">Group thread</span>
                   ) : null}
                   {conversation ? (
-                    <span className="rounded-full border border-slate-700 px-2 py-0.5 text-xs text-slate-400">
+                    <span className="rounded-full border border-slate-300 px-2 py-0.5 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-400">
                       Conversation: {conversation.status}
                     </span>
                   ) : null}
                   {assignedTo(selectedContact) ? (
-                    <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-200">
-                      Assigned to <span className="font-medium text-emerald-100">{assigneeLabel(selectedContact)}</span>
+                    <span className="rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1 text-xs text-cyan-200">
+                      Assigned to <span className="font-medium text-cyan-100">{assigneeLabel(selectedContact)}</span>
                     </span>
                   ) : null}
                 </div>
@@ -729,7 +755,9 @@ export default function ChatsPage() {
                         <label
                           key={label.id}
                           className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1 text-xs ${
-                            checked ? 'border-emerald-500/60 bg-emerald-500/10 text-white' : 'border-slate-700 text-slate-400'
+                            checked
+                              ? 'border-cyan-500/60 bg-cyan-500/10 text-slate-900 dark:text-white'
+                              : 'border-slate-300 text-slate-600 dark:border-slate-700 dark:text-slate-400'
                           }`}
                         >
                           <input
@@ -745,14 +773,14 @@ export default function ChatsPage() {
                     })}
                   </div>
                 ) : null}
-                {syncNotice ? <p className="mt-2 text-xs text-emerald-300">{syncNotice}</p> : null}
+                {syncNotice ? <p className="mt-2 text-xs text-cyan-300">{syncNotice}</p> : null}
               </>
             ) : (
               <h2 className="font-medium text-slate-500">Select a contact</h2>
             )}
           </header>
 
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-slate-950/40 p-4">
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-slate-50/80 p-4 dark:bg-slate-950/40">
             {!selectedContact ? (
               <p className="text-sm text-slate-500">Choose a contact to open the conversation.</p>
             ) : messages.length === 0 ? (
@@ -773,43 +801,69 @@ export default function ChatsPage() {
                     </Button>
                   </div>
                 ) : null}
-                {visibleMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
-                  >
+                {visibleMessages.map((message) => {
+                  const media = mediaFromRaw(message)
+                  const isMediaPlaceholder = message.body === '[image]' || message.body === '[video]'
+                  return (
+                  <div key={message.id} className={`flex ${message.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}>
                     <div
                       className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow ${
                         message.direction === 'outbound'
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-slate-800 text-slate-100'
+                          ? 'bg-cyan-600 text-white'
+                          : 'bg-white text-slate-800 border border-slate-200 dark:border-0 dark:bg-slate-800 dark:text-slate-100'
                       }`}
                     >
+                      {media ? (
+                        <div className="mb-2 space-y-1">
+                          <p className="text-[11px] font-medium uppercase tracking-wide opacity-80">{media.kind}</p>
+                          {media.kind === 'image' ? (
+                            <a href={mediaProxyUrl(workspaceId, message.id)} target="_blank" rel="noreferrer">
+                              <img
+                                src={mediaProxyUrl(workspaceId, message.id)}
+                                alt="WhatsApp media"
+                                className="max-h-56 rounded-lg border border-black/10 object-contain"
+                                loading="lazy"
+                              />
+                            </a>
+                          ) : media.kind === 'video' ? (
+                            <video controls preload="metadata" className="max-h-64 rounded-lg border border-black/10">
+                              <source src={mediaProxyUrl(workspaceId, message.id)} />
+                            </video>
+                          ) : media.url ? (
+                            <a href={media.url} target="_blank" rel="noreferrer" className="text-xs underline underline-offset-2 opacity-90">
+                              Open {media.kind}
+                            </a>
+                          ) : (
+                            <p className="text-xs opacity-80">{media.kind} received</p>
+                          )}
+                          {media.caption ? <p className="whitespace-pre-wrap">{media.caption}</p> : null}
+                        </div>
+                      ) : null}
                       {isGroup(selectedContact) && senderFromRaw(message) && message.direction === 'inbound' ? (
                         <p className="mb-1 font-mono text-[10px] text-sky-300">{senderFromRaw(message)}</p>
                       ) : null}
-                      <p className="whitespace-pre-wrap">{message.body}</p>
+                      {message.body && !(media && isMediaPlaceholder) ? <p className="whitespace-pre-wrap">{message.body}</p> : null}
                       <p
                         className={`mt-1 text-[10px] ${
-                          message.direction === 'outbound' ? 'text-emerald-100/80' : 'text-slate-500'
+                          message.direction === 'outbound' ? 'text-cyan-100/80' : 'text-slate-500'
                         }`}
                       >
                         {new Date(message.created_at).toLocaleString()}
                       </p>
                     </div>
                   </div>
-                ))}
+                )})}
                 <div ref={messagesEndRef} />
               </>
             )}
           </div>
 
-          <form onSubmit={sendMessage} className="shrink-0 border-t border-slate-800 p-3">
+          <form onSubmit={sendMessage} className="shrink-0 border-t border-slate-200 p-3 dark:border-slate-800">
             <div className="flex gap-2">
             <select
               value={selectedInstanceId}
               onChange={(event) => setSelectedInstanceId(event.target.value)}
-              className="hidden max-w-[220px] rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white sm:block"
+              className="hidden max-w-[220px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-950 dark:text-white sm:block"
             >
               {instances.length === 0 ? (
                 <option value="">No WhatsApp number</option>
@@ -827,7 +881,7 @@ export default function ChatsPage() {
               disabled={!selectedContact || sending}
               rows={2}
               placeholder={selectedContact ? 'Type a WhatsApp message…' : 'Select a contact first'}
-              className="min-h-[52px] flex-1 resize-none rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none ring-emerald-500/50 focus:ring-2 disabled:opacity-50"
+              className="min-h-[52px] flex-1 resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-cyan-500/50 focus:ring-2 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             />
             <Button type="submit" disabled={!selectedContact || sending || !draft.trim() || !selectedInstanceId} className="self-end">
               {sending ? 'Sending…' : 'Send'}

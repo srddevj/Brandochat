@@ -315,10 +315,10 @@ export default function Settings() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
-      <aside className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3">
-        <div className="mb-3 rounded-xl bg-slate-950/50 p-3">
+      <aside className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/60">
+        <div className="mb-3 rounded-xl bg-slate-100 p-3 dark:bg-slate-950/50">
           <p className="text-xs uppercase tracking-wide text-slate-500">Workspace settings</p>
-          <p className="mt-1 truncate text-sm font-semibold text-white">{workspace?.name ?? 'Workspace'}</p>
+          <p className="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-white">{workspace?.name ?? 'Workspace'}</p>
         </div>
         <nav className="space-y-1">
           {sections.map((section) => (
@@ -327,7 +327,9 @@ export default function Settings() {
               type="button"
               onClick={() => selectSection(section.id)}
               className={`w-full rounded-lg px-3 py-2 text-left text-sm transition ${
-                activeSection === section.id ? 'bg-emerald-500/15 text-emerald-300' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                activeSection === section.id
+                  ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
               }`}
             >
               <span className="font-medium">{section.label}</span>
@@ -339,7 +341,11 @@ export default function Settings() {
 
       <div className="space-y-6">
         <FormError message={error} />
-        {notice ? <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">{notice}</p> : null}
+        {notice ? (
+          <p className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-700 dark:text-cyan-300">
+            {notice}
+          </p>
+        ) : null}
         {activeSection === 'profile' ? (
           <ProfileSection canManage={canManage} form={profileForm} onChange={setProfileForm} onSubmit={saveProfile} />
         ) : null}
@@ -409,7 +415,7 @@ function ProfileSection({
   onSubmit: (event: React.FormEvent) => void
 }) {
   return (
-    <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900/50">
       <PageHeader title="Workspace profile" description="Manage the identity and defaults for this workspace." />
       <form onSubmit={onSubmit} className="mt-5 space-y-4">
         <div className="grid gap-3 sm:grid-cols-2">
@@ -432,7 +438,7 @@ function ProfileSection({
             value={form.description}
             onChange={(event) => onChange({ ...form, description: event.target.value })}
             rows={3}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none ring-emerald-500/50 focus:ring-2 disabled:opacity-60"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-cyan-500/50 focus:ring-2 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
         </FormField>
         <Button type="submit" disabled={!canManage}>
@@ -457,9 +463,9 @@ function TeamSection(props: {
   onRoleChange: (member: MemberRow, role: MemberRow['role']) => void
 }) {
   return (
-    <section className="space-y-5 rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+    <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900/50">
       <PageHeader title="Team" description="Invite teammates, review members, and plan role permissions." />
-      <form onSubmit={props.onCreateInvitation} className="grid gap-3 rounded-xl border border-slate-800 bg-slate-950/50 p-4 md:grid-cols-[1fr_160px_auto] md:items-end">
+      <form onSubmit={props.onCreateInvitation} className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[1fr_160px_auto] md:items-end dark:border-slate-800 dark:bg-slate-950/50">
         <FormField label="Invite by email">
           <TextInput
             required
@@ -475,7 +481,7 @@ function TeamSection(props: {
             disabled={!props.canManage}
             value={props.inviteRole}
             onChange={(event) => props.onInviteRole(event.target.value as InvitationRow['role'])}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white disabled:opacity-60"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           >
             {roleOptions.map((role) => (
               <option key={role} value={role}>
@@ -489,21 +495,21 @@ function TeamSection(props: {
         </Button>
       </form>
 
-      <div className="rounded-xl border border-slate-800">
-        <div className="border-b border-slate-800 px-4 py-3">
-          <h2 className="font-medium text-white">Members</h2>
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+          <h2 className="font-medium text-slate-900 dark:text-white">Members</h2>
         </div>
         {props.members.map((member) => (
-          <div key={member.user_id} className="flex flex-col gap-2 border-b border-slate-800 px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+          <div key={member.user_id} className="flex flex-col gap-2 border-b border-slate-200 px-4 py-3 last:border-b-0 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-mono text-sm text-slate-300">{member.user_id}</p>
+              <p className="font-mono text-sm text-slate-700 dark:text-slate-300">{member.user_id}</p>
               <p className="text-xs text-slate-500">Joined {new Date(member.created_at).toLocaleDateString()}</p>
             </div>
             <select
               disabled={!props.canManage || member.role === 'owner'}
               value={member.role}
               onChange={(event) => props.onRoleChange(member, event.target.value as MemberRow['role'])}
-              className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-white disabled:opacity-60"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             >
               {roleOptions.map((role) => (
                 <option key={role} value={role}>
@@ -515,16 +521,16 @@ function TeamSection(props: {
         ))}
       </div>
 
-      <div className="rounded-xl border border-slate-800">
-        <div className="border-b border-slate-800 px-4 py-3">
-          <h2 className="font-medium text-white">Pending invitations</h2>
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+          <h2 className="font-medium text-slate-900 dark:text-white">Pending invitations</h2>
           <p className="mt-1 text-xs text-slate-500">Email delivery can be connected later. For now, copy the token or invite row.</p>
         </div>
         {props.invitations.length === 0 ? <p className="px-4 py-4 text-sm text-slate-500">No invitations yet.</p> : null}
         {props.invitations.map((invitation) => (
-          <div key={invitation.id} className="flex flex-col gap-2 border-b border-slate-800 px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+          <div key={invitation.id} className="flex flex-col gap-2 border-b border-slate-200 px-4 py-3 last:border-b-0 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm text-white">{invitation.email}</p>
+              <p className="text-sm text-slate-900 dark:text-white">{invitation.email}</p>
               <p className="font-mono text-xs text-slate-500">
                 {invitation.role} · {invitation.status} · token {invitation.token}
               </p>
@@ -538,8 +544,8 @@ function TeamSection(props: {
         ))}
       </div>
 
-      <section className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-        <h2 className="font-medium text-white">Role permissions later</h2>
+      <section className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+        <h2 className="font-medium text-slate-900 dark:text-white">Role permissions later</h2>
         <p className="mt-1 text-sm text-slate-400">
           Granular permissions such as viewing automations, deleting chats, and managing labels are reserved for the next role matrix.
         </p>
@@ -561,9 +567,9 @@ function LabelsSection(props: {
   onDelete: (labelId: string) => void
 }) {
   return (
-    <section className="space-y-5 rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+    <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900/50">
       <PageHeader title="Labels" description="Create labels that can be attached to conversations in the inbox." />
-      <form onSubmit={props.onCreate} className="grid gap-3 rounded-xl border border-slate-800 bg-slate-950/50 p-4 md:grid-cols-[1fr_140px_1fr_auto] md:items-end">
+      <form onSubmit={props.onCreate} className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[1fr_140px_1fr_auto] md:items-end dark:border-slate-800 dark:bg-slate-950/50">
         <FormField label="Label name">
           <TextInput required value={props.name} onChange={(event) => props.onName(event.target.value)} placeholder="VIP" />
         </FormField>
@@ -578,7 +584,7 @@ function LabelsSection(props: {
       <div className="grid gap-3">
         {props.labels.length === 0 ? <p className="text-sm text-slate-500">No labels yet.</p> : null}
         {props.labels.map((label) => (
-          <div key={label.id} className="grid gap-3 rounded-xl border border-slate-800 bg-slate-950/50 p-4 md:grid-cols-[1fr_120px_1fr_auto] md:items-center">
+          <div key={label.id} className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[1fr_120px_1fr_auto] md:items-center dark:border-slate-800 dark:bg-slate-950/50">
             <TextInput value={label.name} onChange={(event) => props.onUpdate(label, { name: event.target.value })} />
             <TextInput type="color" value={label.color} onChange={(event) => props.onUpdate(label, { color: event.target.value })} />
             <TextInput value={label.description ?? ''} onChange={(event) => props.onUpdate(label, { description: event.target.value || null })} />
@@ -608,9 +614,9 @@ function ContactsSettingsSection(props: {
   onDelete: (fieldId: string) => void
 }) {
   return (
-    <section className="space-y-5 rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+    <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900/50">
       <PageHeader title="Contact custom fields" description="Create shared custom fields that appear on all contacts and placeholders." />
-      <form onSubmit={props.onCreate} className="grid gap-3 rounded-xl border border-slate-800 bg-slate-950/50 p-4 md:grid-cols-[1fr_180px_140px_auto_auto_auto] md:items-end">
+      <form onSubmit={props.onCreate} className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[1fr_180px_140px_auto_auto_auto] md:items-end dark:border-slate-800 dark:bg-slate-950/50">
         <FormField label="Label">
           <TextInput required value={props.fieldLabel} onChange={(event) => props.onFieldLabel(event.target.value)} placeholder="Meeting datetime" />
         </FormField>
@@ -618,7 +624,7 @@ function ContactsSettingsSection(props: {
           <TextInput required value={props.fieldKey} onChange={(event) => props.onFieldKey(event.target.value)} placeholder="meeting_datetime" />
         </FormField>
         <FormField label="Type">
-          <select value={props.fieldType} onChange={(event) => props.onFieldType(event.target.value as ContactFieldType)} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white">
+          <select value={props.fieldType} onChange={(event) => props.onFieldType(event.target.value as ContactFieldType)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white">
             {contactFieldTypeOptions.map((type) => (
               <option key={type} value={type}>
                 {type}
@@ -629,7 +635,7 @@ function ContactsSettingsSection(props: {
         <Button type="button" variant="secondary" onClick={props.onAutoGenerateKey}>
           Regenerate key
         </Button>
-        <label className="mb-2 flex items-center gap-2 text-sm text-slate-300">
+        <label className="mb-2 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
           <input type="checkbox" checked={props.fieldRequired} onChange={(event) => props.onFieldRequired(event.target.checked)} />
           Required
         </label>
@@ -638,17 +644,17 @@ function ContactsSettingsSection(props: {
       <div className="space-y-3">
         {props.fields.length === 0 ? <p className="text-sm text-slate-500">No custom fields yet.</p> : null}
         {props.fields.map((field) => (
-          <div key={field.id} className="grid gap-3 rounded-xl border border-slate-800 bg-slate-950/50 p-4 md:grid-cols-[140px_1fr_140px_auto_auto] md:items-center">
+          <div key={field.id} className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[140px_1fr_140px_auto_auto] md:items-center dark:border-slate-800 dark:bg-slate-950/50">
             <TextInput value={field.key} onChange={(event) => props.onUpdate(field, { key: toFieldKey(event.target.value) })} />
             <TextInput value={field.label} onChange={(event) => props.onUpdate(field, { label: event.target.value })} />
-            <select value={field.type} onChange={(event) => props.onUpdate(field, { type: event.target.value as ContactFieldType })} className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white">
+            <select value={field.type} onChange={(event) => props.onUpdate(field, { type: event.target.value as ContactFieldType })} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white">
               {contactFieldTypeOptions.map((type) => (
                 <option key={type} value={type}>
                   {type}
                 </option>
               ))}
             </select>
-            <label className="flex items-center gap-2 text-sm text-slate-300">
+            <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
               <input type="checkbox" checked={field.required} onChange={(event) => props.onUpdate(field, { required: event.target.checked })} />
               Required
             </label>
@@ -664,7 +670,7 @@ function ContactsSettingsSection(props: {
 
 function IntegrationsSection({ workspaceId }: { workspaceId: string }) {
   return (
-    <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
+    <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900/50">
       <PageHeader title="Integrations" description="Workspace-level channels and connected services." />
       <div className="grid gap-3 lg:grid-cols-2">
         <IntegrationCard title="WhatsApp numbers" description="Connect Baileys WhatsApp Web sessions." href={`/w/${workspaceId}/whatsapp`} />
@@ -678,10 +684,10 @@ function IntegrationsSection({ workspaceId }: { workspaceId: string }) {
 
 function IntegrationCard({ title, description, href }: { title: string; description: string; href?: string }) {
   const content = (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4 transition hover:border-emerald-500/50">
-      <p className="font-medium text-white">{title}</p>
-      <p className="mt-1 text-sm text-slate-400">{description}</p>
-      <p className="mt-3 text-sm text-emerald-300">{href ? 'Manage' : 'Configured on server'}</p>
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-cyan-500/50 dark:border-slate-800 dark:bg-slate-950/50">
+      <p className="font-medium text-slate-900 dark:text-white">{title}</p>
+      <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{description}</p>
+      <p className="mt-3 text-sm text-cyan-600 dark:text-cyan-300">{href ? 'Manage' : 'Configured on server'}</p>
     </div>
   )
   return href ? <Link to={href}>{content}</Link> : content

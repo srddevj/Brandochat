@@ -279,13 +279,13 @@ export default function IntegrationsPage() {
     <div className="space-y-6">
       <PageHeader title="Integrations" description="Open an integration card and manage settings/logs in tabs." />
       <FormError message={error} />
-      {notice ? <p className="text-sm text-emerald-300">{notice}</p> : null}
+      {notice ? <p className="text-sm text-cyan-600 dark:text-cyan-300">{notice}</p> : null}
 
       {activeCard == null ? (
         <section className="space-y-3">
           <div>
-            <h2 className="text-lg font-semibold text-white">Explore integrations</h2>
-            <p className="text-sm text-slate-400">Click a card to open its settings and logs panel.</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Explore integrations</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Click a card to open its settings and logs panel.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {integrationCards.map((card) => {
@@ -299,19 +299,21 @@ export default function IntegrationsPage() {
                     if (card.key === 'calendly' || card.key === 'chatgpt') setActiveCard(card.key)
                   }}
                   className={`rounded-2xl border p-4 text-left transition ${
-                    isEnabled ? 'border-slate-800 bg-slate-900/40 hover:border-emerald-500/30' : 'cursor-not-allowed border-slate-800 bg-slate-900/20 opacity-60'
+                    isEnabled
+                      ? 'border-slate-200 bg-white hover:border-cyan-500/30 dark:border-slate-800 dark:bg-slate-900/40'
+                      : 'cursor-not-allowed border-slate-200 bg-slate-100 opacity-60 dark:border-slate-800 dark:bg-slate-900/20'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-base font-semibold text-white">{card.title}</p>
+                      <p className="text-base font-semibold text-slate-900 dark:text-white">{card.title}</p>
                       <p className="text-xs text-slate-500">{card.subtitle}</p>
                     </div>
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] ${isEnabled ? 'bg-emerald-800/30 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] ${isEnabled ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300' : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}>
                       {isEnabled ? 'Open' : 'Soon'}
                     </span>
                   </div>
-                  <p className="mt-3 text-sm text-slate-400">{card.description}</p>
+                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">{card.description}</p>
                 </button>
               )
             })}
@@ -320,7 +322,7 @@ export default function IntegrationsPage() {
       ) : null}
 
       {activeCard === 'calendly' ? (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/50">
           <div className="mb-4">
             <Button type="button" variant="secondary" className="px-3 py-1.5 text-xs" onClick={() => setActiveCard(null)}>
               Back to integrations
@@ -333,19 +335,19 @@ export default function IntegrationsPage() {
           {calendlyTab === 'settings' ? (
             <div className="space-y-5">
               <form className="grid gap-4 md:grid-cols-2" onSubmit={connectCalendlyToken}>
-                <label className="block text-sm text-slate-300 md:col-span-2">Personal token<TextInput className="mt-1" value={calendlyToken} onChange={(event) => setCalendlyToken(event.target.value)} placeholder="pat_..." /></label>
+                <label className="block text-sm text-slate-700 dark:text-slate-300 md:col-span-2">Personal token<TextInput className="mt-1" value={calendlyToken} onChange={(event) => setCalendlyToken(event.target.value)} placeholder="pat_..." /></label>
                 <div className="md:col-span-2"><Button type="submit" disabled={connectingCalendly}>{connectingCalendly ? 'Connecting…' : 'Save token'}</Button></div>
               </form>
               <form className="grid gap-4 md:grid-cols-2" onSubmit={createCalendlyWebhookSubscription}>
-                <label className="block text-sm text-slate-300">Scope<select value={calendlyScope} onChange={(event) => setCalendlyScope(event.target.value as CalendlyScope)} className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"><option value="organization">organization</option><option value="user">user</option><option value="group">group</option></select></label>
-                <label className="block text-sm text-slate-300">Organization URI<TextInput className="mt-1" value={calendlyOrganizationUri} onChange={(event) => setCalendlyOrganizationUri(event.target.value)} /></label>
-                {calendlyScope === 'user' ? <label className="block text-sm text-slate-300">User URI<TextInput className="mt-1" value={calendlyUserUri} onChange={(event) => setCalendlyUserUri(event.target.value)} /></label> : null}
-                {calendlyScope === 'group' ? <label className="block text-sm text-slate-300">Group URI<TextInput className="mt-1" value={calendlyGroupUri} onChange={(event) => setCalendlyGroupUri(event.target.value)} /></label> : null}
-                <label className="block text-sm text-slate-300 md:col-span-2">Callback URL<TextInput className="mt-1" value={calendlyCallbackUrl} onChange={(event) => setCalendlyCallbackUrl(event.target.value)} /></label>
-                <label className="block text-sm text-slate-300 md:col-span-2">Signing key (optional)<TextInput className="mt-1" value={calendlySigningKey} onChange={(event) => setCalendlySigningKey(event.target.value)} /></label>
+                <label className="block text-sm text-slate-700 dark:text-slate-300">Scope<select value={calendlyScope} onChange={(event) => setCalendlyScope(event.target.value as CalendlyScope)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white"><option value="organization">organization</option><option value="user">user</option><option value="group">group</option></select></label>
+                <label className="block text-sm text-slate-700 dark:text-slate-300">Organization URI<TextInput className="mt-1" value={calendlyOrganizationUri} onChange={(event) => setCalendlyOrganizationUri(event.target.value)} /></label>
+                {calendlyScope === 'user' ? <label className="block text-sm text-slate-700 dark:text-slate-300">User URI<TextInput className="mt-1" value={calendlyUserUri} onChange={(event) => setCalendlyUserUri(event.target.value)} /></label> : null}
+                {calendlyScope === 'group' ? <label className="block text-sm text-slate-700 dark:text-slate-300">Group URI<TextInput className="mt-1" value={calendlyGroupUri} onChange={(event) => setCalendlyGroupUri(event.target.value)} /></label> : null}
+                <label className="block text-sm text-slate-700 dark:text-slate-300 md:col-span-2">Callback URL<TextInput className="mt-1" value={calendlyCallbackUrl} onChange={(event) => setCalendlyCallbackUrl(event.target.value)} /></label>
+                <label className="block text-sm text-slate-700 dark:text-slate-300 md:col-span-2">Signing key (optional)<TextInput className="mt-1" value={calendlySigningKey} onChange={(event) => setCalendlySigningKey(event.target.value)} /></label>
                 <div className="md:col-span-2 grid gap-2 sm:grid-cols-2">
                   {calendlyEventOptions.map((eventName) => (
-                    <label key={eventName} className="flex items-center gap-2 rounded-lg bg-slate-950 px-2 py-2 text-sm text-slate-300">
+                    <label key={eventName} className="flex items-center gap-2 rounded-lg bg-slate-100 px-2 py-2 text-sm text-slate-700 dark:bg-slate-950 dark:text-slate-300">
                       <input type="checkbox" checked={calendlySelectedEvents.includes(eventName)} onChange={(event) => event.target.checked ? setCalendlySelectedEvents([...calendlySelectedEvents, eventName]) : setCalendlySelectedEvents(calendlySelectedEvents.filter((value) => value !== eventName))} />
                       <span>{eventName}</span>
                     </label>
@@ -357,11 +359,11 @@ export default function IntegrationsPage() {
                 </div>
               </form>
               <div className="space-y-2">
-                <p className="text-sm font-medium text-white">Webhook subscriptions</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">Webhook subscriptions</p>
                 {calendlyWebhooks.length === 0 ? <p className="text-sm text-slate-500">No webhook subscriptions yet.</p> : null}
                 {calendlyWebhooks.map((row) => (
-                  <article key={row.id} className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
-                    <p className="text-sm text-white">{row.scope} - {row.state}</p>
+                  <article key={row.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+                    <p className="text-sm text-slate-900 dark:text-white">{row.scope} - {row.state}</p>
                     <p className="text-xs text-slate-500 break-all">{row.calendly_webhook_uri}</p>
                     <p className="text-xs text-slate-400">Events: {row.events.join(', ')}</p>
                   </article>
@@ -372,24 +374,24 @@ export default function IntegrationsPage() {
             <div className="space-y-2">
               {calendlyEvents.length === 0 ? <p className="text-sm text-slate-500">No Calendly webhook events yet.</p> : null}
               {calendlyEvents.map((row) => (
-                <article key={row.id} className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                <article key={row.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/40">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[11px] text-slate-300">{row.processing_status}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] ${row.signature_valid ? 'bg-emerald-800/30 text-emerald-300' : 'bg-rose-800/30 text-rose-300'}`}>{row.signature_valid ? 'signature ok' : 'signature failed'}</span>
+                    <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] text-slate-700 dark:bg-slate-800 dark:text-slate-300">{row.processing_status}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] ${row.signature_valid ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' : 'bg-rose-500/20 text-rose-700 dark:text-rose-300'}`}>{row.signature_valid ? 'signature ok' : 'signature failed'}</span>
                   </div>
-                  <p className="mt-1 text-sm text-white">{row.event}</p>
+                  <p className="mt-1 text-sm text-slate-900 dark:text-white">{row.event}</p>
                   <p className="text-xs text-slate-500">{new Date(row.created_at).toLocaleString()}</p>
                   {row.error ? <p className="text-xs text-rose-300">{row.error}</p> : null}
-                  <details className="mt-2 rounded-lg border border-slate-800 bg-slate-950/80 p-2">
+                  <details className="mt-2 rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-800 dark:bg-slate-950/80">
                     <summary className="cursor-pointer text-xs text-slate-300">Payload JSON</summary>
                     <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-all text-[11px] text-slate-300">{toPrettyJson(row.payload)}</pre>
                   </details>
                 </article>
               ))}
               {logs.filter((log) => log.provider === 'calendly').map((log) => (
-                <article key={log.id} className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                <article key={log.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/40">
                   <p className="text-xs text-slate-500">{new Date(log.created_at).toLocaleString()}</p>
-                  <p className="text-sm text-white">{log.action}</p>
+                  <p className="text-sm text-slate-900 dark:text-white">{log.action}</p>
                   <p className="text-xs text-slate-400">{log.message}</p>
                 </article>
               ))}
@@ -397,7 +399,7 @@ export default function IntegrationsPage() {
           )}
         </section>
       ) : activeCard === 'chatgpt' ? (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/50">
           <div className="mb-4">
             <Button type="button" variant="secondary" className="px-3 py-1.5 text-xs" onClick={() => setActiveCard(null)}>
               Back to integrations
@@ -409,18 +411,18 @@ export default function IntegrationsPage() {
           </div>
           {chatgptTab === 'settings' ? (
             <form className="grid gap-4 md:grid-cols-2" onSubmit={saveChatgpt}>
-              <label className="block text-sm text-slate-300 md:col-span-2">ChatGPT API key<TextInput className="mt-1" value={chatgptApiKey} onChange={(event) => setChatgptApiKey(event.target.value)} placeholder="sk-..." /></label>
-              <label className="block text-sm text-slate-300">Base URL<TextInput className="mt-1" value={chatgptBaseUrl} onChange={(event) => setChatgptBaseUrl(event.target.value)} placeholder="https://api.openai.com/v1" /></label>
-              <label className="block text-sm text-slate-300">Model<TextInput className="mt-1" value={chatgptModel} onChange={(event) => setChatgptModel(event.target.value)} placeholder="gpt-4o-mini" /></label>
+              <label className="block text-sm text-slate-700 dark:text-slate-300 md:col-span-2">ChatGPT API key<TextInput className="mt-1" value={chatgptApiKey} onChange={(event) => setChatgptApiKey(event.target.value)} placeholder="sk-..." /></label>
+              <label className="block text-sm text-slate-700 dark:text-slate-300">Base URL<TextInput className="mt-1" value={chatgptBaseUrl} onChange={(event) => setChatgptBaseUrl(event.target.value)} placeholder="https://api.openai.com/v1" /></label>
+              <label className="block text-sm text-slate-700 dark:text-slate-300">Model<TextInput className="mt-1" value={chatgptModel} onChange={(event) => setChatgptModel(event.target.value)} placeholder="gpt-4o-mini" /></label>
               <div className="md:col-span-2"><Button type="submit" disabled={savingChatgpt}>{savingChatgpt ? 'Saving…' : 'Save ChatGPT settings'}</Button></div>
             </form>
           ) : (
             <div className="space-y-2">
               {logs.filter((log) => log.provider === 'chatgpt').length === 0 ? <p className="text-sm text-slate-500">No ChatGPT logs yet.</p> : null}
               {logs.filter((log) => log.provider === 'chatgpt').map((log) => (
-                <article key={log.id} className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                <article key={log.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/40">
                   <p className="text-xs text-slate-500">{new Date(log.created_at).toLocaleString()}</p>
-                  <p className="text-sm text-white">{log.action}</p>
+                  <p className="text-sm text-slate-900 dark:text-white">{log.action}</p>
                   <p className="text-xs text-slate-400">{log.message}</p>
                 </article>
               ))}

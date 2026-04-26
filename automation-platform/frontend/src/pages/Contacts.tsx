@@ -428,7 +428,7 @@ export default function ContactsPage() {
       <FormError message={error} />
 
       {showCreate ? (
-      <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+      <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/40">
         <p className="text-sm text-slate-400">
           JID example: <code className="text-emerald-300">491234567890@s.whatsapp.net</code>
         </p>
@@ -449,7 +449,7 @@ export default function ContactsPage() {
             <select
               value={gender}
               onChange={(e) => setGender(e.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             >
               {GENDER_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -467,7 +467,7 @@ export default function ContactsPage() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none ring-emerald-500/50 focus:ring-2"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-cyan-500/50 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
         </FormField>
         <ConfiguredAttributesEditor
@@ -483,11 +483,11 @@ export default function ContactsPage() {
       ) : null}
 
       {editingId ? (
-        <section className="rounded-2xl border border-emerald-500/30 bg-slate-900/80 p-4 shadow-xl shadow-emerald-950/10">
+        <section className="rounded-2xl border border-cyan-500/30 bg-white p-4 shadow-xl shadow-slate-200/30 dark:bg-slate-900/80 dark:shadow-cyan-950/10">
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-wide text-emerald-300">Editing contact</p>
-              <h2 className="mt-1 text-lg font-semibold text-white">{editDisplayName || editWaJid}</h2>
+              <p className="text-xs uppercase tracking-wide text-cyan-600 dark:text-cyan-300">Editing contact</p>
+              <h2 className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{editDisplayName || editWaJid}</h2>
               <p className="mt-1 font-mono text-xs text-slate-500">{editingId}</p>
             </div>
             <div className="flex gap-2">
@@ -519,7 +519,7 @@ export default function ContactsPage() {
               <select
                 value={editGender}
                 onChange={(e) => setEditGender(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
               >
                 {GENDER_OPTIONS.map((option) => (
                   <option key={option} value={option}>
@@ -537,7 +537,7 @@ export default function ContactsPage() {
               value={editNotes}
               onChange={(e) => setEditNotes(e.target.value)}
               rows={2}
-              className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none ring-emerald-500/50 focus:ring-2"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-cyan-500/50 focus:ring-2 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             />
           </FormField>
           <div className="mt-3">
@@ -553,9 +553,9 @@ export default function ContactsPage() {
       ) : null}
 
       {view === 'lists' ? (
-        <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+        <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/50">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-white">Contact lists ({lists.length})</h2>
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white">Contact lists ({lists.length})</h2>
           </div>
           <form onSubmit={createList} className="grid gap-2 sm:grid-cols-[1fr_130px_auto]">
             <TextInput value={newListName} onChange={(event) => setNewListName(event.target.value)} placeholder="New list name" />
@@ -567,10 +567,10 @@ export default function ContactsPage() {
             {lists.map((list) => {
               const count = listMemberships.filter((member) => member.list_id === list.id).length
               return (
-                <article key={list.id} className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                <article key={list.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/40">
                   <div className="flex items-center gap-2">
                     <span className="h-3 w-3 rounded-full" style={{ backgroundColor: list.color }} />
-                    <p className="font-medium text-white">{list.name}</p>
+                    <p className="font-medium text-slate-900 dark:text-white">{list.name}</p>
                     <span className="ml-auto text-xs text-slate-500">{count} contacts</span>
                   </div>
                 </article>
@@ -581,9 +581,9 @@ export default function ContactsPage() {
       ) : null}
 
       {view === 'tags' ? (
-        <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+        <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900/50">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-white">Contact tags ({tags.length})</h2>
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white">Contact tags ({tags.length})</h2>
           </div>
           <form onSubmit={createTag} className="grid gap-2 sm:grid-cols-[1fr_130px_auto]">
             <TextInput value={newTagName} onChange={(event) => setNewTagName(event.target.value)} placeholder="New tag name" />
@@ -595,10 +595,10 @@ export default function ContactsPage() {
             {tags.map((tag) => {
               const count = tagMemberships.filter((member) => member.tag_id === tag.id).length
               return (
-                <article key={tag.id} className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                <article key={tag.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/40">
                   <div className="flex items-center gap-2">
                     <span className="h-3 w-3 rounded-full" style={{ backgroundColor: tag.color }} />
-                    <p className="font-medium text-white">{tag.name}</p>
+                    <p className="font-medium text-slate-900 dark:text-white">{tag.name}</p>
                     <span className="ml-auto text-xs text-slate-500">{count} contacts</span>
                   </div>
                 </article>
@@ -609,8 +609,8 @@ export default function ContactsPage() {
       ) : null}
 
       {view === 'all' ? (
-      <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50">
-        <div className="flex flex-col gap-3 border-b border-slate-800 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/50">
+        <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
           <TextInput
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -622,8 +622,8 @@ export default function ContactsPage() {
             <span>1 / 1</span>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 px-4 py-3">
-          <select value={selectedListId} onChange={(event) => setSelectedListId(event.target.value)} className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-white">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+          <select value={selectedListId} onChange={(event) => setSelectedListId(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white">
             <option value="">Choose list</option>
             {lists.map((list) => (
               <option key={list.id} value={list.id}>
@@ -634,7 +634,7 @@ export default function ContactsPage() {
           <Button type="button" variant="secondary" className="px-3 py-1.5 text-xs" disabled={!selectedListId || selectedContactIds.length === 0} onClick={() => void addSelectedToList()}>
             Add selected to list
           </Button>
-          <select value={selectedTagId} onChange={(event) => setSelectedTagId(event.target.value)} className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-white">
+          <select value={selectedTagId} onChange={(event) => setSelectedTagId(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white">
             <option value="">Choose tag</option>
             {tags.map((tag) => (
               <option key={tag.id} value={tag.id}>
@@ -649,7 +649,7 @@ export default function ContactsPage() {
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-slate-800 bg-slate-950/50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-slate-200 bg-slate-100 text-xs uppercase tracking-wide text-slate-600 dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-500">
               <tr>
                 <th className="px-4 py-3">
                   <input
@@ -669,7 +669,7 @@ export default function ContactsPage() {
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
               {visibleRows.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
@@ -678,7 +678,7 @@ export default function ContactsPage() {
                 </tr>
               ) : (
                 visibleRows.map((row) => (
-                  <tr key={row.id} className="align-top hover:bg-slate-800/30">
+                  <tr key={row.id} className="align-top hover:bg-slate-50 dark:hover:bg-slate-800/30">
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
@@ -691,22 +691,22 @@ export default function ContactsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-xs font-semibold text-slate-300">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                           {(row.display_name || row.wa_jid).slice(0, 2).toUpperCase()}
                         </span>
                         <div>
-                          <p className="font-medium text-white">{row.display_name || row.wa_jid}</p>
+                          <p className="font-medium text-slate-900 dark:text-white">{row.display_name || row.wa_jid}</p>
                           <p className="font-mono text-xs text-slate-500">{row.wa_jid}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-slate-400">WhatsApp</td>
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400">WhatsApp</td>
                     <td className="px-4 py-3 text-slate-500">-</td>
-                    <td className="px-4 py-3 text-slate-300">{row.phone_e164 || '-'}</td>
+                    <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{row.phone_e164 || '-'}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {[standardField(row, 'gender'), standardField(row, 'birthday')].filter(Boolean).map((label) => (
-                          <span key={label} className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
+                          <span key={label} className="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                             {label}
                           </span>
                         ))}
@@ -745,20 +745,20 @@ function ConfiguredAttributesEditor({
   emptyLabel: string
 }) {
   return (
-    <section className="space-y-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+    <section className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/40">
       <div>
-        <h2 className="text-sm font-medium text-white">Custom attributes</h2>
+        <h2 className="text-sm font-medium text-slate-900 dark:text-white">Custom attributes</h2>
         {!compact ? (
           <p className="mt-1 text-xs text-slate-500">
             These are shared workspace fields configured in Settings and become placeholders like{' '}
-            <code className="text-emerald-300">{'{{contact.attr.meeting_datetime}}'}</code>.
+            <code className="text-cyan-600 dark:text-cyan-300">{'{{contact.attr.meeting_datetime}}'}</code>.
           </p>
         ) : null}
       </div>
       {definitions.length === 0 ? <p className="text-xs text-slate-500">{emptyLabel}</p> : null}
       {definitions.map((field) => (
         <div key={field.id} className="grid gap-2 sm:grid-cols-[180px_1fr]">
-          <label className="text-xs text-slate-400">
+          <label className="text-xs text-slate-600 dark:text-slate-400">
             {field.label}
             <span className="ml-1 font-mono text-slate-500">{field.key}</span>
             {field.required ? <span className="ml-1 text-rose-300">*</span> : null}
@@ -783,8 +783,8 @@ function AttributePills({ metadata }: { metadata: Contact['metadata'] }) {
   return (
     <div className="mt-2 flex flex-wrap gap-2">
       {attrs.map((attr) => (
-        <span key={attr.key} className="rounded-full border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs text-slate-300">
-          {attr.key}: <span className="text-emerald-300">{attr.value}</span>
+        <span key={attr.key} className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+          {attr.key}: <span className="text-cyan-600 dark:text-cyan-300">{attr.value}</span>
         </span>
       ))}
     </div>

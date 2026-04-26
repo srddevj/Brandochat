@@ -12,6 +12,22 @@ type ContactRow = {
 }
 
 const CONTACT_SELECT = 'id, wa_jid, phone_e164, display_name, metadata'
+const GROUP_SUBJECT_CACHE_MS = 5 * 60 * 1000
+const groupSubjectCache = new Map<string, { subject: string; expiresAt: number }>()
+
+async function resolveGroupSubject(sock: WASocket, groupJid: string): Promise<string | null> {
+  const cached = groupSubjectCache.get(groupJid)
+  if (cached && cached.expiresAt > Date.now()) return cached.subject
+  try {
+    const metadata = await sock.groupMetadata(groupJid)
+    const subject = typeof metadata?.subject === 'string' ? metadata.subject.trim() : ''
+    if (!subject) return null
+    groupSubjectCache.set(groupJid, { subject, expiresAt: Date.now() + GROUP_SUBJECT_CACHE_MS })
+    return subject
+  } catch {
+    return null
+  }
+}
 
 function metadataFrom(contact?: ContactRow | null): Record<string, unknown> {
   return contact?.metadata && typeof contact.metadata === 'object' && !Array.isArray(contact.metadata) ? contact.metadata : {}
@@ -85,6 +101,7 @@ export async function handleInboundText(args: {
   const { admin, workspaceId, instanceId, sock, remoteJid, alternateJid, phoneE164, participantJid, participantAltJid, text, waMessageId, raw } = args
   const receivedAt = new Date().toISOString()
   const isGroup = remoteJid.endsWith('@g.us')
+  const groupSubject = isGroup ? await resolveGroupSubject(sock, remoteJid) : null
 
   const existingContact = await findExistingContact({ admin, workspaceId, remoteJid, alternateJid, phoneE164 })
   const canonicalJid =
@@ -98,7 +115,14 @@ export async function handleInboundText(args: {
     ...existingMetadata,
     ...(lidJid ? { wa_lid: lidJid, wa_jid_alt: lidJid } : {}),
     ...(canonicalJid !== remoteJid ? { wa_last_inbound_jid: remoteJid } : {}),
-    ...(isGroup ? { wa_is_group: true, wa_last_participant_jid: participantJid ?? null, wa_last_participant_alt_jid: participantAltJid ?? null } : {}),
+    ...(isGroup
+      ? {
+          wa_is_group: true,
+          wa_last_participant_jid: participantJid ?? null,
+          wa_last_participant_alt_jid: participantAltJid ?? null,
+          wa_group_subject: groupSubject ?? undefined,
+        }
+      : {}),
   }
 
   const upsertPayload = {
@@ -106,6 +130,7 @@ export async function handleInboundText(args: {
     wa_jid: canonicalJid,
     phone_e164: isGroup ? null : phoneE164 ?? (existingContact?.phone_e164 as string | null | undefined) ?? null,
     display_name:
+      (isGroup ? groupSubject : null) ??
       (existingContact?.display_name as string | null | undefined) ??
       phoneE164 ??
       canonicalJid.split('@')[0] ??
@@ -163,7 +188,14 @@ export async function handleInboundText(args: {
         wa_unread_count: currentUnread + 1,
         wa_last_message_at: receivedAt,
         wa_last_message_body: text,
-        ...(isGroup ? { wa_is_group: true, wa_last_participant_jid: participantJid ?? null, wa_last_participant_alt_jid: participantAltJid ?? null } : {}),
+        ...(isGroup
+          ? {
+              wa_is_group: true,
+              wa_last_participant_jid: participantJid ?? null,
+              wa_last_participant_alt_jid: participantAltJid ?? null,
+              wa_group_subject: groupSubject ?? undefined,
+            }
+          : {}),
       },
     })
     .eq('id', contactId)

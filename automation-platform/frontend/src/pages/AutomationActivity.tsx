@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { FormError } from '../shared/ui/form-error'
@@ -73,22 +73,25 @@ export default function AutomationActivity() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <PageHeader title="Automation activity" description="Recent automation runs, trigger events, current nodes, and failures." />
-        <Link to={`/w/${workspaceId}/automations`} className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300">
+        <Link
+          to={`/w/${workspaceId}/automations`}
+          className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-transparent dark:text-slate-300 dark:hover:bg-slate-800/60"
+        >
           Back to automations
         </Link>
       </div>
       <FormError message={error} />
 
-      <div className="inline-flex rounded-xl border border-slate-800 bg-slate-950/60 p-1 text-sm">
-        <Link to={`/w/${workspaceId}/automations`} className="rounded-lg px-3 py-1.5 text-slate-400">
+      <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1 text-sm dark:border-slate-800 dark:bg-slate-950/60">
+        <Link to={`/w/${workspaceId}/automations`} className="rounded-lg px-3 py-1.5 text-slate-600 dark:text-slate-400">
           Automations
         </Link>
-        <span className="rounded-lg bg-slate-800 px-3 py-1.5 text-white">Activity log</span>
+        <span className="rounded-lg bg-white px-3 py-1.5 text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white dark:shadow-none">Activity log</span>
       </div>
 
-      <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50">
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/50">
         <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-slate-800 bg-slate-950/50 text-xs uppercase tracking-wide text-slate-500">
+          <thead className="border-b border-slate-200 bg-slate-100 text-xs uppercase tracking-wide text-slate-600 dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-500">
             <tr>
               <th className="px-4 py-3">Started</th>
               <th className="px-4 py-3">Automation</th>
@@ -100,7 +103,7 @@ export default function AutomationActivity() {
               <th className="px-4 py-3">Trace</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800">
+          <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
@@ -112,57 +115,67 @@ export default function AutomationActivity() {
                 const trace = executionTrace(row)
                 const expanded = expandedId === row.id
                 return (
-                  <>
-                    <tr key={row.id} className="hover:bg-slate-800/30">
-                      <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-500">{new Date(row.started_at).toLocaleString()}</td>
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-white">{row.automations?.name ?? 'Automation'}</p>
+                  <Fragment key={row.id}>
+                    <tr>
+                      <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                        {new Date(row.started_at).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                        <p className="font-medium text-slate-900 dark:text-white">{row.automations?.name ?? 'Automation'}</p>
                         <p className="font-mono text-xs text-slate-500">{row.automation_id}</p>
                       </td>
-                      <td className="px-4 py-3 text-slate-400">{row.trigger_type}</td>
-                      <td className="px-4 py-3">
-                        <p className="text-slate-300">{row.contacts?.display_name ?? row.contacts?.wa_jid ?? '-'}</p>
+                      <td className="px-4 py-3 text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/30">{row.trigger_type}</td>
+                      <td className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                        <p className="text-slate-700 dark:text-slate-300">{row.contacts?.display_name ?? row.contacts?.wa_jid ?? '-'}</p>
                         {row.contacts?.wa_jid ? <p className="font-mono text-xs text-slate-500">{row.contacts.wa_jid}</p> : null}
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-slate-400">{row.current_node_id}</td>
-                      <td className="px-4 py-3">
-                        <span className={`rounded-full px-2 py-0.5 text-xs ${row.status === 'failed' ? 'bg-red-500/15 text-red-300' : row.status === 'completed' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-sky-500/15 text-sky-300'}`}>
+                      <td className="px-4 py-3 font-mono text-xs text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/30">{row.current_node_id}</td>
+                      <td className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs ${
+                            row.status === 'failed'
+                              ? 'bg-red-500/15 text-red-600 dark:text-red-300'
+                              : row.status === 'completed'
+                                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                                : 'bg-sky-500/15 text-sky-700 dark:text-sky-300'
+                          }`}
+                        >
                           {row.status}
                         </span>
                       </td>
-                      <td className="max-w-xs px-4 py-3 text-red-300">{row.error ?? '-'}</td>
-                      <td className="px-4 py-3">
+                      <td className="max-w-xs px-4 py-3 text-red-600 hover:bg-slate-50 dark:text-red-300 dark:hover:bg-slate-800/30">{row.error ?? '-'}</td>
+                      <td className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/30">
                         <button
                           type="button"
                           onClick={() => setExpandedId(expanded ? null : row.id)}
-                          className="rounded-lg border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:border-emerald-500/70 hover:text-white"
+                          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700 hover:border-cyan-500/70 hover:text-slate-900 dark:border-slate-700 dark:bg-transparent dark:text-slate-300 dark:hover:text-white"
                         >
                           {expanded ? 'Hide' : 'View'} trace ({trace.length})
                         </button>
                       </td>
                     </tr>
                     {expanded ? (
-                      <tr key={`${row.id}-trace`} className="bg-slate-950/40">
+                      <tr className="bg-slate-50 dark:bg-slate-950/40">
                         <td colSpan={8} className="px-4 py-4">
                           {trace.length === 0 ? (
                             <p className="text-sm text-slate-500">No detailed trace was recorded for this older run. New runs will include node-by-node details.</p>
                           ) : (
                             <div className="space-y-3">
                               {trace.map((entry, index) => (
-                                <div key={`${row.id}-${index}`} className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                                <div key={`${row.id}-${index}`} className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950/70">
                                   <div className="flex flex-wrap items-center gap-2 text-xs">
-                                    <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 font-medium text-emerald-300">{index + 1}</span>
-                                    <span className="font-mono text-slate-400">{entry.nodeId ?? '-'}</span>
+                                    <span className="rounded-full bg-cyan-500/10 px-2 py-0.5 font-medium text-cyan-700 dark:text-cyan-300">{index + 1}</span>
+                                    <span className="font-mono text-slate-600 dark:text-slate-400">{entry.nodeId ?? '-'}</span>
                                     <span className="text-slate-500">{entry.nodeType ?? '-'}</span>
-                                    <span className="font-medium text-white">{entry.event ?? 'step'}</span>
+                                    <span className="font-medium text-slate-900 dark:text-white">{entry.event ?? 'step'}</span>
                                     {entry.at ? <span className="ml-auto font-mono text-slate-600">{new Date(entry.at).toLocaleTimeString()}</span> : null}
                                   </div>
                                   {entry.detail ? (
                                     <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-3">
                                       {Object.entries(entry.detail).map(([key, value]) => (
-                                        <div key={key} className="rounded-lg bg-slate-900/70 p-2">
+                                        <div key={key} className="rounded-lg bg-slate-100 p-2 dark:bg-slate-900/70">
                                           <dt className="text-slate-500">{key}</dt>
-                                          <dd className="mt-1 break-words font-mono text-slate-300">{formatDetailValue(value)}</dd>
+                                          <dd className="mt-1 break-words font-mono text-slate-700 dark:text-slate-300">{formatDetailValue(value)}</dd>
                                         </div>
                                       ))}
                                     </dl>
@@ -174,7 +187,7 @@ export default function AutomationActivity() {
                         </td>
                       </tr>
                     ) : null}
-                  </>
+                  </Fragment>
                 )
               })
             )}

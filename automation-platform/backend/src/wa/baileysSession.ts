@@ -145,6 +145,12 @@ function extractText(msg: Record<string, unknown>): string | null {
   if (buttonsResponse?.selectedDisplayText || buttonsResponse?.selectedButtonId) return buttonsResponse.selectedDisplayText ?? buttonsResponse.selectedButtonId ?? null
   const listResponse = m.listResponseMessage as { title?: string; singleSelectReply?: { selectedRowId?: string } } | undefined
   if (listResponse?.title || listResponse?.singleSelectReply?.selectedRowId) return listResponse.title ?? listResponse.singleSelectReply?.selectedRowId ?? null
+  if (m.audioMessage) return '[audio]'
+  if (m.imageMessage) return '[image]'
+  if (m.videoMessage) return '[video]'
+  if (m.documentMessage) return '[document]'
+  if (m.stickerMessage) return '[sticker]'
+  if (m.locationMessage) return '[location]'
   return null
 }
 
