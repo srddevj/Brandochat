@@ -14,13 +14,25 @@ export function getSupabaseBrowserConfig(): { url: string; anonKey: string } {
 }
 
 export function getDemoAuthConfig(): {
+  /** Show “Use demo account” and related demo-only UI */
   enabled: boolean
+  /** Prefill email/password so Sign in works in one click when demo creds are baked in */
+  prefillLoginFields: boolean
   email: string
   password: string
 } {
+  const modeOn = String(import.meta.env.VITE_DEMO_MODE || '').toLowerCase() === 'true'
+  const explicitEmail = String(import.meta.env.VITE_DEMO_EMAIL ?? '').trim()
+  const explicitPassword = String(import.meta.env.VITE_DEMO_PASSWORD ?? '').trim()
+  const explicitCreds = explicitEmail !== '' && explicitPassword !== ''
+
+  const email = explicitEmail || 'demo@brandochat.local'
+  const password = explicitPassword || 'DemoPass123!'
+
   return {
-    enabled: String(import.meta.env.VITE_DEMO_MODE || '').toLowerCase() === 'true',
-    email: import.meta.env.VITE_DEMO_EMAIL || 'demo@brandochat.local',
-    password: import.meta.env.VITE_DEMO_PASSWORD || 'DemoPass123!',
+    enabled: modeOn,
+    prefillLoginFields: modeOn || explicitCreds,
+    email,
+    password,
   }
 }
