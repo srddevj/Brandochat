@@ -1,5 +1,6 @@
-# Minimal Supabase config — run `supabase link` and `supabase db push` against your project.
-project_id = "nvrfrortocphmxnnxhkz"
+# Minimal Supabase config — run `supabase link` (writes your real project ref locally).
+# Use a placeholder in git; never commit production project IDs or secrets.
+project_id = "localdevplaceholder01"
 
 [api]
 enabled = true
