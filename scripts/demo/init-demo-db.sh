@@ -20,11 +20,23 @@ if [[ -z "${SUPABASE_URL:-}" || -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]]; then
 fi
 
 echo "Checking whether schema is already initialized..."
-HAS_WORKSPACES="$(
+set +e
+HAS_WORKSPACES_RAW="$(
   psql "$DATABASE_URL" -tAc "
     select to_regclass('public.workspaces') is not null;
-  " | tr -d '[:space:]'
+  " 2>&1
 )"
+PSQL_STATUS=$?
+set -e
+
+if [[ $PSQL_STATUS -ne 0 ]]; then
+  echo "Could not connect to DATABASE_URL. Skipping automatic DB bootstrap."
+  echo "psql error: ${HAS_WORKSPACES_RAW}"
+  echo "Set a reachable DATABASE_URL to enable migration bootstrap."
+  exit 0
+fi
+
+HAS_WORKSPACES="$(echo "$HAS_WORKSPACES_RAW" | tr -d '[:space:]')"
 
 if [[ "${HAS_WORKSPACES}" != "t" ]]; then
   echo "Schema not found. Applying migrations..."

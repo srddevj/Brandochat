@@ -8,7 +8,7 @@ services:
       - ./:/workspace
     command: >
       sh -lc "apk add --no-cache bash curl jq >/dev/null &&
-      bash scripts/demo/init-demo-db.sh"
+      bash scripts/demo/init-demo-db.sh || true"
     restart: "no"
 
   backend:
