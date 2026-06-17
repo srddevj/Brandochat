@@ -10,8 +10,8 @@ services:
       WA_AUTH_ROOT: /app/data/wa_sessions
     volumes:
       - wa_sessions:/app/data/wa_sessions
-    expose:
-      - "3847"
+    ports:
+      - "3847:3847"
     restart: unless-stopped
 
   frontend:
@@ -23,8 +23,8 @@ services:
         VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
     depends_on:
       - backend
-    expose:
-      - "80"
+    ports:
+      - "5173:80"
     restart: unless-stopped
 
 volumes:
