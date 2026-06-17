@@ -1,0 +1,8 @@
+{
+  "currentMediaFilesStrategy": "auto-download",
+  "lastMediaFileStrategyRun": "auto-download",
+  "mediaFileStrategyApplyState": "applied",
+  "mediaFileStrategySwitchStarted": false,
+  "autoSyncEnabled": true,
+  "syncDelayMinutes": 5
+}

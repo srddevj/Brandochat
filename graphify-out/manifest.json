@@ -1,0 +1,607 @@
+{
+  "D:\\apps\\Brandochat\\.claude\\settings.json": {
+    "mtime": 1781711847.5287726,
+    "ast_hash": "7bf81dca0376bde3a32244b82bc7cbc0",
+    "semantic_hash": "7bf81dca0376bde3a32244b82bc7cbc0"
+  },
+  "D:\\apps\\Brandochat\\.gemini\\settings.json": {
+    "mtime": 1781711974.1510236,
+    "ast_hash": "ddc6069a85a1acc06096e06bcd8087ac",
+    "semantic_hash": "ddc6069a85a1acc06096e06bcd8087ac"
+  },
+  "D:\\apps\\Brandochat\\.project\\localProjectSettings.json": {
+    "mtime": 1781712200.167823,
+    "ast_hash": "488af1234087887e8008aac13637a383",
+    "semantic_hash": "488af1234087887e8008aac13637a383"
+  },
+  "D:\\apps\\Brandochat\\.vscode\\settings.json": {
+    "mtime": 1781712073.284519,
+    "ast_hash": "52aa91c51f999406711e5c2229d774fb",
+    "semantic_hash": "52aa91c51f999406711e5c2229d774fb"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\package.json": {
+    "mtime": 1781698617.557577,
+    "ast_hash": "6a087340fe2881ecdf5f124c47766b54",
+    "semantic_hash": "6a087340fe2881ecdf5f124c47766b54"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\app.ts": {
+    "mtime": 1781698617.5650737,
+    "ast_hash": "fe4df67854048c5590a40d9a5a46ffa7",
+    "semantic_hash": "fe4df67854048c5590a40d9a5a46ffa7"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\config\\env.ts": {
+    "mtime": 1781698617.565588,
+    "ast_hash": "f661b0b36f0022db6bb72dffd775930d",
+    "semantic_hash": "f661b0b36f0022db6bb72dffd775930d"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\flow\\graphRuntime.test.ts": {
+    "mtime": 1781698617.565588,
+    "ast_hash": "84d8d058fcbd60c532d418b92a41e3a2",
+    "semantic_hash": "84d8d058fcbd60c532d418b92a41e3a2"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\flow\\graphRuntime.ts": {
+    "mtime": 1781698617.5665991,
+    "ast_hash": "437640ac4a1d06b4197939853b3a70a9",
+    "semantic_hash": "437640ac4a1d06b4197939853b3a70a9"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\flow\\openaiBranch.ts": {
+    "mtime": 1781698617.5665991,
+    "ast_hash": "042659f000f1361ad5ce1da6698b350c",
+    "semantic_hash": "042659f000f1361ad5ce1da6698b350c"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\flow\\runAutomation.ts": {
+    "mtime": 1781698617.5665991,
+    "ast_hash": "35038a6420bf9f0139d2551e4c1d8af0",
+    "semantic_hash": "35038a6420bf9f0139d2551e4c1d8af0"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\flow\\scheduler.ts": {
+    "mtime": 1781698617.5681098,
+    "ast_hash": "7a9756b988c8a1c0bc6827d29c7a8dc5",
+    "semantic_hash": "7a9756b988c8a1c0bc6827d29c7a8dc5"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\flow\\triggerRouter.test.ts": {
+    "mtime": 1781698617.5681098,
+    "ast_hash": "ee5d89b2be251451e3b5a40cd2fd828d",
+    "semantic_hash": "ee5d89b2be251451e3b5a40cd2fd828d"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\flow\\triggerRouter.ts": {
+    "mtime": 1781698617.5691216,
+    "ast_hash": "25918b177e43552d2ab51ee564505ec5",
+    "semantic_hash": "25918b177e43552d2ab51ee564505ec5"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\flow\\types.ts": {
+    "mtime": 1781698617.5691216,
+    "ast_hash": "5105e9a5d5bbbba7f6700a6a1948615d",
+    "semantic_hash": "5105e9a5d5bbbba7f6700a6a1948615d"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\http\\async-handler.ts": {
+    "mtime": 1781698617.5696292,
+    "ast_hash": "7b8402709ddfcd71655977a4e050910f",
+    "semantic_hash": "7b8402709ddfcd71655977a4e050910f"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\integration\\calendly\\client.ts": {
+    "mtime": 1781698617.5696292,
+    "ast_hash": "ab298f43e6635004975639398ed281ab",
+    "semantic_hash": "ab298f43e6635004975639398ed281ab"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\integration\\calendly\\mapper.test.ts": {
+    "mtime": 1781698617.5696292,
+    "ast_hash": "e67963e605d3806b5204e23328cc0ee8",
+    "semantic_hash": "e67963e605d3806b5204e23328cc0ee8"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\integration\\calendly\\mapper.ts": {
+    "mtime": 1781698617.5696292,
+    "ast_hash": "9deb4be11c31da60a1695919ee418a15",
+    "semantic_hash": "9deb4be11c31da60a1695919ee418a15"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\integration\\calendly\\signature.test.ts": {
+    "mtime": 1781698617.5696292,
+    "ast_hash": "3e31076b60c14e992c07d01bf29e78b0",
+    "semantic_hash": "3e31076b60c14e992c07d01bf29e78b0"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\integration\\calendly\\signature.ts": {
+    "mtime": 1781698617.571293,
+    "ast_hash": "ec62a4ae07e10455409e4c0add88ba60",
+    "semantic_hash": "ec62a4ae07e10455409e4c0add88ba60"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\integration\\dbReachable.test.ts": {
+    "mtime": 1781698617.571293,
+    "ast_hash": "c873b811e0f7a8c204f9a931597bcbf0",
+    "semantic_hash": "c873b811e0f7a8c204f9a931597bcbf0"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\lib\\supabase-clients.ts": {
+    "mtime": 1781698617.571293,
+    "ast_hash": "d27199cb4bfb3477f3c7934f2d86d2fd",
+    "semantic_hash": "d27199cb4bfb3477f3c7934f2d86d2fd"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\middleware\\workspace-auth.middleware.ts": {
+    "mtime": 1781698617.571293,
+    "ast_hash": "515b0200bb398bc69dc801625c18021b",
+    "semantic_hash": "515b0200bb398bc69dc801625c18021b"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\routes\\calendly-webhook.routes.ts": {
+    "mtime": 1781698617.572736,
+    "ast_hash": "0075b0e8016c468cc91e65d4f1bcea32",
+    "semantic_hash": "0075b0e8016c468cc91e65d4f1bcea32"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\routes\\calendly.routes.ts": {
+    "mtime": 1781698617.572736,
+    "ast_hash": "5cf19711cbe1ba79f034f2ead8b02143",
+    "semantic_hash": "5cf19711cbe1ba79f034f2ead8b02143"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\routes\\health.routes.ts": {
+    "mtime": 1781698617.572736,
+    "ast_hash": "6f697f769941d1acce382bf3691811f8",
+    "semantic_hash": "6f697f769941d1acce382bf3691811f8"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\routes\\wa.routes.ts": {
+    "mtime": 1781698617.572736,
+    "ast_hash": "c16d1afd30c8ebf5f400bf76cfec7359",
+    "semantic_hash": "c16d1afd30c8ebf5f400bf76cfec7359"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\routes\\webhook.routes.ts": {
+    "mtime": 1781698617.5737455,
+    "ast_hash": "9e3aa2ae52f88984803bc23265cb6eb4",
+    "semantic_hash": "9e3aa2ae52f88984803bc23265cb6eb4"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\server.ts": {
+    "mtime": 1781698617.5737455,
+    "ast_hash": "502b957b1250ed1e314e364f2a675ec8",
+    "semantic_hash": "502b957b1250ed1e314e364f2a675ec8"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\shims.d.ts": {
+    "mtime": 1781698617.5737455,
+    "ast_hash": "62258106732102fab5310248179244b7",
+    "semantic_hash": "62258106732102fab5310248179244b7"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\types\\express.ts": {
+    "mtime": 1781698617.5737455,
+    "ast_hash": "5da30eb115290520244e60288a9cff01",
+    "semantic_hash": "5da30eb115290520244e60288a9cff01"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\wa\\baileysSession.ts": {
+    "mtime": 1781698617.5752552,
+    "ast_hash": "bba764174a4e22a70f37238f62e6eb9b",
+    "semantic_hash": "bba764174a4e22a70f37238f62e6eb9b"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\wa\\conversations.ts": {
+    "mtime": 1781698617.5752552,
+    "ast_hash": "92a150b29034f4e4bcf152b687b137d2",
+    "semantic_hash": "92a150b29034f4e4bcf152b687b137d2"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\wa\\historySync.ts": {
+    "mtime": 1781698617.5752552,
+    "ast_hash": "aef7c71183b2547b7566b89ee7b77964",
+    "semantic_hash": "aef7c71183b2547b7566b89ee7b77964"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\wa\\inboundPipeline.ts": {
+    "mtime": 1781698617.575939,
+    "ast_hash": "b35d42c7ff296cd3bb5a188fad7f8055",
+    "semantic_hash": "b35d42c7ff296cd3bb5a188fad7f8055"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\src\\wa\\sessionBackup.ts": {
+    "mtime": 1781698617.575939,
+    "ast_hash": "bf59e8fbfac25fd77c99cc7e7cf23e52",
+    "semantic_hash": "bf59e8fbfac25fd77c99cc7e7cf23e52"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\tsconfig.json": {
+    "mtime": 1781698617.5769646,
+    "ast_hash": "0d254134eba352c71e3ca68a3180f885",
+    "semantic_hash": "0d254134eba352c71e3ca68a3180f885"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\backend\\vitest.config.ts": {
+    "mtime": 1781698617.5769646,
+    "ast_hash": "b32beef381bdb0dd01fe3a20b0007061",
+    "semantic_hash": "b32beef381bdb0dd01fe3a20b0007061"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\eslint.config.js": {
+    "mtime": 1781698617.5784724,
+    "ast_hash": "a859553e5d59b7217275e3e99daef762",
+    "semantic_hash": "a859553e5d59b7217275e3e99daef762"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\package.json": {
+    "mtime": 1781698617.5794961,
+    "ast_hash": "6a85de4102cd9e009804932f768d66a3",
+    "semantic_hash": "6a85de4102cd9e009804932f768d66a3"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\postcss.config.js": {
+    "mtime": 1781698617.5794961,
+    "ast_hash": "5b84f4567208c7c747079c0477373231",
+    "semantic_hash": "5b84f4567208c7c747079c0477373231"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\app\\App.tsx": {
+    "mtime": 1781698617.5811827,
+    "ast_hash": "5a362f81b7b6601e3c39c09e0be3e2ad",
+    "semantic_hash": "5a362f81b7b6601e3c39c09e0be3e2ad"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\app\\routes.tsx": {
+    "mtime": 1781698617.5811827,
+    "ast_hash": "680d2278cbc6dac3b8ced3b59609a033",
+    "semantic_hash": "680d2278cbc6dac3b8ced3b59609a033"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\components\\Layout.tsx": {
+    "mtime": 1781698617.5827684,
+    "ast_hash": "c3879d8c011a348a7de6a29efb9d35ef",
+    "semantic_hash": "c3879d8c011a348a7de6a29efb9d35ef"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\config\\public-env.ts": {
+    "mtime": 1781698617.5827684,
+    "ast_hash": "9741113579bd2ef86abfe936a42b1f2d",
+    "semantic_hash": "9741113579bd2ef86abfe936a42b1f2d"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\context\\AuthContext.tsx": {
+    "mtime": 1781698617.5827684,
+    "ast_hash": "1fa026d764b1fc7ec6f6b0305791d5dc",
+    "semantic_hash": "1fa026d764b1fc7ec6f6b0305791d5dc"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\context\\ThemeContext.tsx": {
+    "mtime": 1781698617.5840821,
+    "ast_hash": "81d16f6045d4baf28c7ef42ad3092832",
+    "semantic_hash": "81d16f6045d4baf28c7ef42ad3092832"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\lib\\api.ts": {
+    "mtime": 1781698617.5840821,
+    "ast_hash": "5b1d92da2d4a6cb317aee6dd22cee95d",
+    "semantic_hash": "5b1d92da2d4a6cb317aee6dd22cee95d"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\lib\\contact-metadata.ts": {
+    "mtime": 1781698617.5840821,
+    "ast_hash": "d9467a054c80af572cc4616b8162933f",
+    "semantic_hash": "d9467a054c80af572cc4616b8162933f"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\lib\\supabase.ts": {
+    "mtime": 1781698617.5840821,
+    "ast_hash": "aa70d4088795ceab59266b9341d0bfb3",
+    "semantic_hash": "aa70d4088795ceab59266b9341d0bfb3"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\main.tsx": {
+    "mtime": 1781698617.5840821,
+    "ast_hash": "c3053b114a3fa541e027477ae0ff987b",
+    "semantic_hash": "c3053b114a3fa541e027477ae0ff987b"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\pages\\AccountSettings.tsx": {
+    "mtime": 1781698617.5856624,
+    "ast_hash": "f1d53b94f7644280710ab81d90f93e11",
+    "semantic_hash": "f1d53b94f7644280710ab81d90f93e11"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\pages\\AutomationActivity.tsx": {
+    "mtime": 1781698617.5862005,
+    "ast_hash": "0b32c4fb8fb5f6403d5b1305132178cf",
+    "semantic_hash": "0b32c4fb8fb5f6403d5b1305132178cf"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\pages\\AutomationBuilder.tsx": {
+    "mtime": 1781698617.5862005,
+    "ast_hash": "1c4623c6ce07bb551d7229215db8e381",
+    "semantic_hash": "1c4623c6ce07bb551d7229215db8e381"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\pages\\Automations.tsx": {
+    "mtime": 1781698617.5862005,
+    "ast_hash": "e4c68eb89a47b2bb99b68d201366faad",
+    "semantic_hash": "e4c68eb89a47b2bb99b68d201366faad"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\pages\\Chats.tsx": {
+    "mtime": 1781698617.5872152,
+    "ast_hash": "0423a4348822801b7f5fb5f2a7ffebd9",
+    "semantic_hash": "0423a4348822801b7f5fb5f2a7ffebd9"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\pages\\Contacts.tsx": {
+    "mtime": 1781698617.5872152,
+    "ast_hash": "c5d004a939ffd4cae0cf3854c1131d94",
+    "semantic_hash": "c5d004a939ffd4cae0cf3854c1131d94"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\pages\\Integrations.tsx": {
+    "mtime": 1781698617.5887368,
+    "ast_hash": "c7b0d0f0e458024b16321ca7d43c7a09",
+    "semantic_hash": "c7b0d0f0e458024b16321ca7d43c7a09"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\pages\\Login.tsx": {
+    "mtime": 1781698617.5887368,
+    "ast_hash": "aac06406c0f06fbc68473f6105a4af8f",
+    "semantic_hash": "aac06406c0f06fbc68473f6105a4af8f"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\pages\\MessageLog.tsx": {
+    "mtime": 1781698617.5887368,
+    "ast_hash": "fa2fbaa0b20eefe6b33f2b4f0290d04a",
+    "semantic_hash": "fa2fbaa0b20eefe6b33f2b4f0290d04a"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\pages\\Settings.tsx": {
+    "mtime": 1781698617.5887368,
+    "ast_hash": "e039b7deb73c908b12449e65caac301f",
+    "semantic_hash": "e039b7deb73c908b12449e65caac301f"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\pages\\Templates.tsx": {
+    "mtime": 1781698617.5897474,
+    "ast_hash": "11d6085d86a5268c6f3e99fa83404f9e",
+    "semantic_hash": "11d6085d86a5268c6f3e99fa83404f9e"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\pages\\WhatsApp.tsx": {
+    "mtime": 1781698617.5897474,
+    "ast_hash": "c5ee40aab754994c5885f19c7bc2a683",
+    "semantic_hash": "c5ee40aab754994c5885f19c7bc2a683"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\pages\\WorkspaceHome.tsx": {
+    "mtime": 1781698617.5897474,
+    "ast_hash": "22cd39761b0f8308a721f05920fee5af",
+    "semantic_hash": "22cd39761b0f8308a721f05920fee5af"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\pages\\Workspaces.tsx": {
+    "mtime": 1781698617.5897474,
+    "ast_hash": "df1aeaa3d6d313fff1392d1235c2810a",
+    "semantic_hash": "df1aeaa3d6d313fff1392d1235c2810a"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\shared\\hooks\\useWorkspaceId.ts": {
+    "mtime": 1781698617.5912561,
+    "ast_hash": "29d83fa3cb157d1b7642cfccac417f62",
+    "semantic_hash": "29d83fa3cb157d1b7642cfccac417f62"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\shared\\ui\\button.tsx": {
+    "mtime": 1781698617.5916817,
+    "ast_hash": "c89259743ca3f4b8c79d951d7700f08a",
+    "semantic_hash": "c89259743ca3f4b8c79d951d7700f08a"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\shared\\ui\\form-error.tsx": {
+    "mtime": 1781698617.5916817,
+    "ast_hash": "88eac24dee3e704f380e8426f1caa52d",
+    "semantic_hash": "88eac24dee3e704f380e8426f1caa52d"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\shared\\ui\\form-field.tsx": {
+    "mtime": 1781698617.5916817,
+    "ast_hash": "8e1b7a52f3ebcddf739cf7ea0f8b5ca7",
+    "semantic_hash": "8e1b7a52f3ebcddf739cf7ea0f8b5ca7"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\shared\\ui\\page-header.tsx": {
+    "mtime": 1781698617.5916817,
+    "ast_hash": "b9d1fddc4a7d73c98dcb9d6430400e04",
+    "semantic_hash": "b9d1fddc4a7d73c98dcb9d6430400e04"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\shared\\ui\\text-input.tsx": {
+    "mtime": 1781698617.5916817,
+    "ast_hash": "f4001441b3cd4c73370d2b69bbe5d9e6",
+    "semantic_hash": "f4001441b3cd4c73370d2b69bbe5d9e6"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\vite-env.d.ts": {
+    "mtime": 1781698617.5926893,
+    "ast_hash": "1b4bcf4928e2c56f1ce02422974323bc",
+    "semantic_hash": "1b4bcf4928e2c56f1ce02422974323bc"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\tailwind.config.js": {
+    "mtime": 1781698617.5926893,
+    "ast_hash": "56da96e46aab649d67fa350bf2a45872",
+    "semantic_hash": "56da96e46aab649d67fa350bf2a45872"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\tsconfig.app.json": {
+    "mtime": 1781698617.5926893,
+    "ast_hash": "fc8f262dfcbc69d32de7c4ecd924462b",
+    "semantic_hash": "fc8f262dfcbc69d32de7c4ecd924462b"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\tsconfig.json": {
+    "mtime": 1781698617.5926893,
+    "ast_hash": "852c3a5df14a4b43ac28e9554ebedf4a",
+    "semantic_hash": "852c3a5df14a4b43ac28e9554ebedf4a"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\tsconfig.node.json": {
+    "mtime": 1781698617.5926893,
+    "ast_hash": "242c5175e8c14acb4ad9de2e6184ffe9",
+    "semantic_hash": "242c5175e8c14acb4ad9de2e6184ffe9"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\vite.config.ts": {
+    "mtime": 1781698617.5936997,
+    "ast_hash": "b45a6b5dbcd4a5ee8f4ce06f8bd56cd0",
+    "semantic_hash": "b45a6b5dbcd4a5ee8f4ce06f8bd56cd0"
+  },
+  "D:\\apps\\Brandochat\\comments.json": {
+    "mtime": 1781720296.7947762,
+    "ast_hash": "d751713988987e9331980363e24189ce",
+    "semantic_hash": "d751713988987e9331980363e24189ce"
+  },
+  "D:\\apps\\Brandochat\\package.json": {
+    "mtime": 1781703396.367741,
+    "ast_hash": "77e01e9c4431087d493f3fb655e762c3",
+    "semantic_hash": "77e01e9c4431087d493f3fb655e762c3"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260424120000_initial_schema.sql": {
+    "mtime": 1781698617.5947118,
+    "ast_hash": "35a7f6faea4fa72fe03d9db7a52e43e5",
+    "semantic_hash": "35a7f6faea4fa72fe03d9db7a52e43e5"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260424225000_multiple_whatsapp_instances.sql": {
+    "mtime": 1781698617.5947118,
+    "ast_hash": "c149139265782979734b58cf4a2e90df",
+    "semantic_hash": "c149139265782979734b58cf4a2e90df"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260424230000_history_sync_events.sql": {
+    "mtime": 1781698617.5947118,
+    "ast_hash": "3bd352d7c39398aa2dd607c3c9efd1f0",
+    "semantic_hash": "3bd352d7c39398aa2dd607c3c9efd1f0"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260425013000_fix_message_events_upsert_constraint.sql": {
+    "mtime": 1781698617.5947118,
+    "ast_hash": "8bcb7508987a69234a504cc3a2456e1f",
+    "semantic_hash": "8bcb7508987a69234a504cc3a2456e1f"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260425013500_backfill_contact_latest_message_metadata.sql": {
+    "mtime": 1781698617.596221,
+    "ast_hash": "419aadb15bddbc57191dd76bb0fdb482",
+    "semantic_hash": "419aadb15bddbc57191dd76bb0fdb482"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260425020500_automation_triggers_conversations.sql": {
+    "mtime": 1781698617.5967493,
+    "ast_hash": "d54fe10cc218ddaaa8e3023013402951",
+    "semantic_hash": "d54fe10cc218ddaaa8e3023013402951"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260425021600_template_options_and_ai_skill.sql": {
+    "mtime": 1781698617.5967493,
+    "ast_hash": "33fb9a65bd3255fb0e07bbfe486eee5f",
+    "semantic_hash": "33fb9a65bd3255fb0e07bbfe486eee5f"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260425022100_drop_template_options.sql": {
+    "mtime": 1781698617.5967493,
+    "ast_hash": "c4cd15dad261c90fb10a6c798c9ea4ff",
+    "semantic_hash": "c4cd15dad261c90fb10a6c798c9ea4ff"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260425110500_workspace_settings_team_labels.sql": {
+    "mtime": 1781698617.5967493,
+    "ast_hash": "055befa277642ecad7df25bfe75f34ca",
+    "semantic_hash": "055befa277642ecad7df25bfe75f34ca"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260425113000_workspace_integrations.sql": {
+    "mtime": 1781698617.5977604,
+    "ast_hash": "78bf7e1f45507d8ee4d98008e39a5a69",
+    "semantic_hash": "78bf7e1f45507d8ee4d98008e39a5a69"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260425114000_workspace_integration_logs.sql": {
+    "mtime": 1781698617.5977604,
+    "ast_hash": "3c0dde13139ad28404cb44ed3ae59eb8",
+    "semantic_hash": "3c0dde13139ad28404cb44ed3ae59eb8"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260425115000_calendly_webhooks_and_events.sql": {
+    "mtime": 1781698617.5977604,
+    "ast_hash": "dab4c9917728179426d7530a9ad6df13",
+    "semantic_hash": "dab4c9917728179426d7530a9ad6df13"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260425120000_workspace_integrations_add_chatgpt_provider.sql": {
+    "mtime": 1781698617.5977604,
+    "ast_hash": "7a04481895d9feaa1ab7773641d37d78",
+    "semantic_hash": "7a04481895d9feaa1ab7773641d37d78"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260425121500_contact_lists_and_tags.sql": {
+    "mtime": 1781698617.5977604,
+    "ast_hash": "f851385742abac6d5bdaa9a545504f9d",
+    "semantic_hash": "f851385742abac6d5bdaa9a545504f9d"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260425123000_whatsapp_instance_settings.sql": {
+    "mtime": 1781698617.5977604,
+    "ast_hash": "b8a9ffd42ca57417d9b10a069e578d4a",
+    "semantic_hash": "b8a9ffd42ca57417d9b10a069e578d4a"
+  },
+  "D:\\apps\\Brandochat\\supabase\\migrations\\20260425142000_workspace_contact_custom_fields.sql": {
+    "mtime": 1781698617.5992694,
+    "ast_hash": "4a8d9de9a610e9312971573c710c78ae",
+    "semantic_hash": "4a8d9de9a610e9312971573c710c78ae"
+  },
+  "D:\\apps\\Brandochat\\.agents\\rules\\graphify.md": {
+    "mtime": 1781711988.6198978,
+    "ast_hash": "a0e4d192b9e2e17256124dbfc8e24e6a",
+    "semantic_hash": "a0e4d192b9e2e17256124dbfc8e24e6a"
+  },
+  "D:\\apps\\Brandochat\\.agents\\workflows\\graphify.md": {
+    "mtime": 1781711988.6258702,
+    "ast_hash": "637776aa6f7496d069afe7520c845c8a",
+    "semantic_hash": "637776aa6f7496d069afe7520c845c8a"
+  },
+  "D:\\apps\\Brandochat\\.claude\\CLAUDE.md": {
+    "mtime": 1781711847.5238943,
+    "ast_hash": "817fe671013b35ae0bc9301dfe449a87",
+    "semantic_hash": "817fe671013b35ae0bc9301dfe449a87"
+  },
+  "D:\\apps\\Brandochat\\.claude\\skills\\graphify\\SKILL.md": {
+    "mtime": 1781711847.522564,
+    "ast_hash": "26828fbc6cf325d3fb0ba6a3a28e03a1",
+    "semantic_hash": "26828fbc6cf325d3fb0ba6a3a28e03a1"
+  },
+  "D:\\apps\\Brandochat\\.claude\\skills\\graphify\\references\\add-watch.md": {
+    "mtime": 1781711500.719766,
+    "ast_hash": "0df0589623217ca38a12bdcabfb42f4c",
+    "semantic_hash": "0df0589623217ca38a12bdcabfb42f4c"
+  },
+  "D:\\apps\\Brandochat\\.claude\\skills\\graphify\\references\\exports.md": {
+    "mtime": 1781711500.719766,
+    "ast_hash": "c04ddf8f1f5ef5e262ebec491a523c74",
+    "semantic_hash": "c04ddf8f1f5ef5e262ebec491a523c74"
+  },
+  "D:\\apps\\Brandochat\\.claude\\skills\\graphify\\references\\extraction-spec.md": {
+    "mtime": 1781711500.7358794,
+    "ast_hash": "24808b03abfeaf5f6435bb69c0125b2c",
+    "semantic_hash": "24808b03abfeaf5f6435bb69c0125b2c"
+  },
+  "D:\\apps\\Brandochat\\.claude\\skills\\graphify\\references\\github-and-merge.md": {
+    "mtime": 1781711500.7383983,
+    "ast_hash": "cde13df085e4c492aeb7ba298a996d0d",
+    "semantic_hash": "cde13df085e4c492aeb7ba298a996d0d"
+  },
+  "D:\\apps\\Brandochat\\.claude\\skills\\graphify\\references\\hooks.md": {
+    "mtime": 1781711500.7383983,
+    "ast_hash": "3f545db6ce646650bb9de588f5512a27",
+    "semantic_hash": "3f545db6ce646650bb9de588f5512a27"
+  },
+  "D:\\apps\\Brandochat\\.claude\\skills\\graphify\\references\\query.md": {
+    "mtime": 1781711500.7383983,
+    "ast_hash": "c2a8e798674a81b02aa9975f43023819",
+    "semantic_hash": "c2a8e798674a81b02aa9975f43023819"
+  },
+  "D:\\apps\\Brandochat\\.claude\\skills\\graphify\\references\\transcribe.md": {
+    "mtime": 1781711500.7383983,
+    "ast_hash": "70f6aa30d6211f3a2c7e9fc45479f50c",
+    "semantic_hash": "70f6aa30d6211f3a2c7e9fc45479f50c"
+  },
+  "D:\\apps\\Brandochat\\.claude\\skills\\graphify\\references\\update.md": {
+    "mtime": 1781711500.740405,
+    "ast_hash": "0dad167a95bdb389f02fecffb60b1bc8",
+    "semantic_hash": "0dad167a95bdb389f02fecffb60b1bc8"
+  },
+  "D:\\apps\\Brandochat\\.github\\copilot-instructions.md": {
+    "mtime": 1781711895.3777587,
+    "ast_hash": "2b23503628bf2ec71d067a85ca8948ab",
+    "semantic_hash": "2b23503628bf2ec71d067a85ca8948ab"
+  },
+  "D:\\apps\\Brandochat\\.project\\complete_drafts.txt": {
+    "mtime": 1781720261.1306221,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "D:\\apps\\Brandochat\\CLAUDE.md": {
+    "mtime": 1781711847.5272298,
+    "ast_hash": "8a6643a420fdad6bfb583523bc6cef16",
+    "semantic_hash": "8a6643a420fdad6bfb583523bc6cef16"
+  },
+  "D:\\apps\\Brandochat\\GEMINI.md": {
+    "mtime": 1781711974.1510236,
+    "ast_hash": "8a6643a420fdad6bfb583523bc6cef16",
+    "semantic_hash": "8a6643a420fdad6bfb583523bc6cef16"
+  },
+  "D:\\apps\\Brandochat\\LICENSE.md": {
+    "mtime": 1781698617.5550542,
+    "ast_hash": "a26d9ce1ee639fc2c4f00901029903d2",
+    "semantic_hash": "a26d9ce1ee639fc2c4f00901029903d2"
+  },
+  "D:\\apps\\Brandochat\\README.md": {
+    "mtime": 1781698617.5550542,
+    "ast_hash": "70ae13d8b43b9e6a2c9ad47f51d4bf8d",
+    "semantic_hash": "70ae13d8b43b9e6a2c9ad47f51d4bf8d"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\README.md": {
+    "mtime": 1781698617.5769646,
+    "ast_hash": "6fcf5dde33fd47569996a88918118876",
+    "semantic_hash": "6fcf5dde33fd47569996a88918118876"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\index.html": {
+    "mtime": 1781698617.5784724,
+    "ast_hash": "4e23343ccd444546e648cca2dea512fc",
+    "semantic_hash": "4e23343ccd444546e648cca2dea512fc"
+  },
+  "D:\\apps\\Brandochat\\docker-compose.yml": {
+    "mtime": 1781698617.5936997,
+    "ast_hash": "1db1180fbddf71ca17d7d57f68b3be25",
+    "semantic_hash": "1db1180fbddf71ca17d7d57f68b3be25"
+  },
+  "D:\\apps\\Brandochat\\supabase\\CLI_SETUP.txt": {
+    "mtime": 1781698617.5936997,
+    "ast_hash": "c39a8d8434fe0635f11e5c059eaf2858",
+    "semantic_hash": "c39a8d8434fe0635f11e5c059eaf2858"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\public\\favicon-bc.svg": {
+    "mtime": 1781698617.5811827,
+    "ast_hash": "2c945cc068e27cead3f09a685436cdc0",
+    "semantic_hash": "2c945cc068e27cead3f09a685436cdc0"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\public\\vite.svg": {
+    "mtime": 1781698617.5811827,
+    "ast_hash": "8e3a10e157f75ada21ab742c022d5430",
+    "semantic_hash": "8e3a10e157f75ada21ab742c022d5430"
+  },
+  "D:\\apps\\Brandochat\\automation-platform\\frontend\\src\\assets\\react.svg": {
+    "mtime": 1781698617.5827684,
+    "ast_hash": "f0402b67b6ce880f65666bb49e841696",
+    "semantic_hash": "f0402b67b6ce880f65666bb49e841696"
+  }
+}
